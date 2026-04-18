@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import base64
 import json
 import re
 from typing import Any, Literal
 
+import json_repair
 from langgraph.types import RunnableConfig
 from pydantic import BaseModel, Field
 
 from design_aware_agents.deps import GraphDeps
+from design_aware_agents.model_presets import inference_config
 from design_aware_agents.state import AgentState
 
 
@@ -55,29 +58,50 @@ class ValidationOutput(BaseModel):
 _FENCE_RE = re.compile(r"```(?:json)?\s*([\s\S]*?)\s*```", re.IGNORECASE)
 
 
+def _try_load_json_object(s: str) -> dict[str, Any]:
+    try:
+        obj = json.loads(s)
+    except json.JSONDecodeError:
+        try:
+            obj = json_repair.loads(s)
+        except Exception as e:
+            raise ValueError(f"json_repair.loads failed: {e}") from e
+    if not isinstance(obj, dict):
+        raise ValueError("Model output was not a JSON object")
+    return obj
+
+
 def _parse_json_object(text: str) -> dict[str, Any]:
     s = text.strip()
     m = _FENCE_RE.search(s)
     if m:
         s = m.group(1).strip()
     try:
-        obj = json.loads(s)
-    except json.JSONDecodeError:
+        return _try_load_json_object(s)
+    except (json.JSONDecodeError, ValueError, TypeError):
         start = s.find("{")
         end = s.rfind("}")
         if start == -1 or end == -1 or end <= start:
             raise
-        obj = json.loads(s[start : end + 1])
-    if not isinstance(obj, dict):
-        raise ValueError("Model output was not a JSON object")
-    return obj
+        return _try_load_json_object(s[start : end + 1])
 
 
 def _coerce_refactor_dict(obj: dict[str, Any]) -> dict[str, Any]:
     """
     Normalize common alternate keys / missing fields from small LLMs before Pydantic validation.
+    If refactored_code_base64 is present, decode into refactored_code.
     """
     out = dict(obj)
+
+    b64 = out.get("refactored_code_base64")
+    if isinstance(b64, str) and b64.strip():
+        try:
+            clean_b64 = re.sub(r"\s+", "", b64.strip())
+            raw = base64.b64decode(clean_b64).decode("utf-8")
+            if raw.strip():
+                out["refactored_code"] = raw
+        except (ValueError, UnicodeDecodeError):
+            pass
 
     reasoning = out.get("reasoning")
     if not isinstance(reasoning, str) or not reasoning.strip():
@@ -87,6 +111,25 @@ def _coerce_refactor_dict(obj: dict[str, Any]) -> dict[str, Any]:
                 out["reasoning"] = val.strip()
                 break
 
+    return out
+
+
+def _coerce_validation_dict(obj: dict[str, Any]) -> dict[str, Any]:
+    """Clamp improvement_score into 0..100; small LLMs often emit -1 or out-of-range values."""
+    out = dict(obj)
+    raw = out.get("improvement_score", 0)
+    try:
+        if isinstance(raw, bool):
+            score = int(raw)
+        elif isinstance(raw, (int, float)):
+            score = int(round(float(raw)))
+        elif isinstance(raw, str) and raw.strip():
+            score = int(round(float(raw.strip())))
+        else:
+            score = 0
+    except (ValueError, TypeError, OverflowError):
+        score = 0
+    out["improvement_score"] = max(0, min(100, score))
     return out
 
 
@@ -160,7 +203,14 @@ def analyze_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
         },
     )
 
-    raw = deps.ollama.chat_json(deps.model, prompt)
+    cfg = inference_config(deps.model)
+    raw = deps.ollama.chat_json(
+        deps.model,
+        prompt,
+        temperature=cfg.temperature,
+        num_predict=cfg.analyze_num_predict,
+        num_ctx=cfg.num_ctx,
+    )
     analysis = AnalyzerOutput.model_validate(_parse_json_object(raw)).model_dump()
     _log_agent(deps, "analyze", raw=raw, parsed=analysis)
 
@@ -197,7 +247,15 @@ def refactor_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
         },
     )
 
-    raw = deps.ollama.chat_json(deps.model, prompt)
+    cfg = inference_config(deps.model)
+    raw = deps.ollama.chat_json(
+        deps.model,
+        prompt,
+        temperature=cfg.temperature,
+        num_predict=cfg.refactor_num_predict,
+        num_ctx=cfg.num_ctx,
+        prefer_plain_before_json=cfg.prefer_plain_refactor,
+    )
     refactor_obj = _coerce_refactor_dict(_parse_json_object(raw))
     refactor = RefactorOutput.model_validate(refactor_obj).model_dump()
     attempt = int(state.get("attempt", 0)) + 1
@@ -225,8 +283,15 @@ def validate_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
         },
     )
 
-    raw = deps.ollama.chat_json(deps.model, prompt)
-    validation = ValidationOutput.model_validate(_parse_json_object(raw)).model_dump()
+    cfg = inference_config(deps.model)
+    raw = deps.ollama.chat_json(
+        deps.model,
+        prompt,
+        temperature=cfg.temperature,
+        num_predict=cfg.validate_num_predict,
+        num_ctx=cfg.num_ctx,
+    )
+    validation = ValidationOutput.model_validate(_coerce_validation_dict(_parse_json_object(raw))).model_dump()
     _log_agent(deps, "validate", raw=raw, parsed=validation)
 
     attempt = int(state.get("attempt", 0))

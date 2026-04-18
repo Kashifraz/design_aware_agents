@@ -12,7 +12,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--prompts-dir", type=Path, default=Path("prompts"))
     p.add_argument("--runs-dir", type=Path, default=Path("runs"))
     p.add_argument("--id", dest="snippet_id", required=True)
-    p.add_argument("--model", required=True, help="Ollama model name, e.g. llama3.1")
+    p.add_argument(
+        "--model",
+        required=True,
+        help="Ollama model tag (built-in presets: starcoder2:7b, deepseek-coder:6.7b, qwen3.5:9b; see model_presets.py)",
+    )
     p.add_argument("--max-refactor-retries", type=int, default=2)
     p.add_argument("--recursion-limit", type=int, default=40)
     p.add_argument(

@@ -10,7 +10,7 @@ Analysis:
 
 Instructions:
 - Suggest a specific refactoring technique (e.g., extract method).
-- Provide the refactored version of the code snippet.
+- Provide the refactored version of the code snippet (include the full code in valid JSON — no truncation).
 - Keep the refactoring minimal and focused on improving the target design issues: {design_issues}
 - Try to preserve the original behavior of code.
 
