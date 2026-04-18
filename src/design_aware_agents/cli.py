@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 from design_aware_agents.run import run_snippet
@@ -24,8 +25,15 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Print each agent's raw/parsed outputs to the terminal while running",
     )
+    p.add_argument(
+        "--fast",
+        action="store_true",
+        help="Lower Ollama num_ctx / num_predict (faster on consumer GPUs; may truncate long refactors)",
+    )
 
     args = p.parse_args(argv)
+    if args.fast:
+        os.environ["DESIGN_AWARE_FAST"] = "1"
     out = run_snippet(
         dataset_path=args.dataset,
         snippet_id=args.snippet_id,
