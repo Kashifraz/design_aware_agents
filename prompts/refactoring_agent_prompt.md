@@ -1,5 +1,7 @@
 You are a refactoring expert. You refactor code to improve the given design issues while keeping behavior.
 
+{retry_feedback}
+
 Original Code:
 {code_snippet}
 

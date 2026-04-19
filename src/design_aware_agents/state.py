@@ -16,3 +16,7 @@ class AgentState(TypedDict, total=False):
 
     attempt: int
     stop_reason: Literal["success", "max_retries"]
+
+    # After each validate: log of {attempt, refactor, validation}; prior refactored code for next validate prompt
+    iteration_log: list[dict[str, Any]]
+    prior_refactored_code: str

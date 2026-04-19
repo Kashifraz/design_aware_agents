@@ -9,6 +9,7 @@ from design_aware_agents import __version__ as package_version
 from design_aware_agents.config import load_dotenv_if_present
 from design_aware_agents.deps import GraphDeps
 from design_aware_agents.graph import build_app
+from design_aware_agents.iteration_rank import pick_best_iteration
 from design_aware_agents.llm import OpenAiClient
 
 METADATA_FILENAME = "metadata.json"
@@ -42,7 +43,19 @@ def _build_metadata_payload(
     model_refactor: str,
     refactored_code_file: str | None,
 ) -> dict[str, Any]:
-    refactor = dict(final.get("refactor") or {})
+    log: list[dict[str, Any]] = list(final.get("iteration_log") or [])
+    best = pick_best_iteration(log) if log else None
+
+    if best:
+        chosen_refactor = dict(best.get("refactor") or {})
+        chosen_validation = best.get("validation")
+        selected_attempt = best.get("attempt")
+    else:
+        chosen_refactor = dict(final.get("refactor") or {})
+        chosen_validation = final.get("validation")
+        selected_attempt = final.get("attempt")
+
+    refactor = dict(chosen_refactor)
     refactor.pop("refactored_code", None)
     if refactored_code_file:
         refactor["refactored_code_file"] = refactored_code_file
@@ -56,8 +69,28 @@ def _build_metadata_payload(
         "design_issues": item.get("design_issues"),
     }
 
-    return {
-        "output_format_version": 1,
+    selection: dict[str, Any] | None = None
+    if log:
+        selection = {
+            "policy": (
+                "best iteration: preserves_behavior (yes > uncertain > no), "
+                "then higher improvement_score, then lower attempt number"
+            ),
+            "selected_attempt": selected_attempt,
+            "last_graph_attempt": final.get("attempt"),
+            "iterations": [
+                {
+                    "attempt": e.get("attempt"),
+                    "preserves_behavior": (e.get("validation") or {}).get("preserves_behavior"),
+                    "improvement_score": (e.get("validation") or {}).get("improvement_score"),
+                    "issue_resolved": (e.get("validation") or {}).get("issue_resolved"),
+                }
+                for e in log
+            ],
+        }
+
+    out: dict[str, Any] = {
+        "output_format_version": 2,
         "finished_at": datetime.now(timezone.utc).isoformat(),
         "run": {
             "snippet_id": snippet_id,
@@ -72,10 +105,13 @@ def _build_metadata_payload(
         "dataset_item": dataset_item,
         "analysis": final.get("analysis"),
         "refactor": refactor,
-        "validation": final.get("validation"),
+        "validation": chosen_validation,
         "attempt": final.get("attempt"),
         "stop_reason": final.get("stop_reason"),
     }
+    if selection is not None:
+        out["selection"] = selection
+    return out
 
 
 def load_dataset(path: Path) -> dict[str, Any]:
@@ -87,6 +123,29 @@ def find_item(dataset: dict[str, Any], snippet_id: str) -> dict[str, Any]:
         if it.get("id") == snippet_id:
             return it
     raise KeyError(f"Unknown snippet id: {snippet_id}")
+
+
+def ordered_dataset_items(dataset: dict[str, Any]) -> list[dict[str, Any]]:
+    """Items sorted by ``snippet_index`` (then id), for stable ``--first N`` / ``--all`` order."""
+    items = [it for it in (dataset.get("items") or []) if isinstance(it, dict)]
+
+    def sort_key(it: dict[str, Any]) -> tuple[int, str]:
+        raw = it.get("snippet_index")
+        n = 10**9
+        if isinstance(raw, bool):
+            n = int(raw)
+        elif isinstance(raw, int):
+            n = raw
+        elif isinstance(raw, float) and raw == int(raw):
+            n = int(raw)
+        elif raw is not None:
+            try:
+                n = int(str(raw).strip())
+            except (TypeError, ValueError):
+                pass
+        return (n, str(it.get("id") or ""))
+
+    return sorted(items, key=sort_key)
 
 
 def run_snippet(
@@ -136,13 +195,28 @@ def run_snippet(
 
         if verbose:
             print("\n=== done ===\n", flush=True)
+            _log = list(final.get("iteration_log") or [])
+            if _log:
+                _best = pick_best_iteration(_log)
+                if _best is not None:
+                    print(
+                        f"[selection] Saved output uses attempt {_best.get('attempt')} "
+                        f"(best of {len(_log)}); see metadata.json \"selection\".\n",
+                        flush=True,
+                    )
 
         out_dir = runs_dir / snippet_id
         out_dir.mkdir(parents=True, exist_ok=True)
 
         code_name = refactored_code_filename(item, snippet_id)
-        refactor = final.get("refactor") or {}
-        refactored_body = refactor.get("refactored_code")
+        log = list(final.get("iteration_log") or [])
+        best = pick_best_iteration(log) if log else None
+        if best:
+            ref_src = best.get("refactor") or {}
+            refactored_body = ref_src.get("refactored_code")
+        else:
+            refactor_fb = final.get("refactor") or {}
+            refactored_body = refactor_fb.get("refactored_code")
         ref_file: str | None = None
         if isinstance(refactored_body, str):
             code_path = out_dir / code_name

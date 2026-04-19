@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 from pathlib import Path
 
 from design_aware_agents.config import load_dotenv_if_present
-from design_aware_agents.run import run_snippet
+from design_aware_agents.run import load_dataset, ordered_dataset_items, run_snippet
 
 
 def _env(name: str, default: str) -> str:
@@ -44,7 +45,24 @@ def main(argv: list[str] | None = None) -> int:
         default=Path(_env("DESIGN_AWARE_RUNS_DIR", "runs")),
         help="Default: env DESIGN_AWARE_RUNS_DIR or runs",
     )
-    p.add_argument("--id", dest="snippet_id", required=True)
+    sel = p.add_mutually_exclusive_group(required=True)
+    sel.add_argument(
+        "--id",
+        dest="snippet_id",
+        metavar="ID",
+        help="Run a single snippet by id (e.g. snippet1)",
+    )
+    sel.add_argument(
+        "--all",
+        action="store_true",
+        help="Run every snippet in dataset order (by snippet_index)",
+    )
+    sel.add_argument(
+        "--first",
+        type=int,
+        metavar="N",
+        help="Run the first N snippets in dataset order (by snippet_index)",
+    )
     p.add_argument(
         "--model-analyze",
         default=_env("OPENAI_MODEL_ANALYZE", "gpt-5.4-nano"),
@@ -79,9 +97,12 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     args = p.parse_args(argv)
-    out = run_snippet(
+
+    if args.first is not None and args.first < 1:
+        p.error("--first requires N >= 1")
+
+    common = dict(
         dataset_path=args.dataset,
-        snippet_id=args.snippet_id,
         prompts_dir=args.prompts_dir,
         model_analyze=args.model_analyze,
         model_validate=args.model_validate,
@@ -91,5 +112,31 @@ def main(argv: list[str] | None = None) -> int:
         runs_dir=args.runs_dir,
         verbose=args.verbose,
     )
-    print(str(out))
+
+    if args.snippet_id is not None:
+        out = run_snippet(snippet_id=args.snippet_id, **common)
+        print(str(out))
+        return 0
+
+    dataset = load_dataset(args.dataset)
+    items = ordered_dataset_items(dataset)
+    if args.all:
+        selected = items
+    else:
+        assert args.first is not None
+        selected = items[: args.first]
+
+    if not selected:
+        print("No items in dataset.", file=sys.stderr)
+        return 1
+
+    paths: list[Path] = []
+    for item in selected:
+        sid = item.get("id")
+        if not sid:
+            continue
+        paths.append(run_snippet(snippet_id=str(sid), **common))
+
+    for path in paths:
+        print(str(path))
     return 0

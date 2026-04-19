@@ -11,6 +11,6 @@ Instructions:
 Output format (JSON only):
 {
   "root_cause": "string",
-  "violated_principle": ["design_principle"],
+  "violated_principle": ["SRP"],
   "explanation": "string"
 }
