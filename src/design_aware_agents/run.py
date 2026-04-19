@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -10,9 +11,107 @@ from design_aware_agents.config import load_dotenv_if_present
 from design_aware_agents.deps import GraphDeps
 from design_aware_agents.graph import build_app
 from design_aware_agents.iteration_rank import pick_best_iteration
-from design_aware_agents.llm import OpenAiClient
+from design_aware_agents.llm import OpenAiClient, UsageAccumulator
 
 METADATA_FILENAME = "metadata.json"
+
+
+def _load_model_prices_usd() -> dict[str, dict[str, float]] | None:
+    """
+    OPENAI_MODEL_PRICES_JSON: {"model-id": {"prompt_per_million_usd": ..., "completion_per_million_usd": ...}}
+    Aliases: input_per_million_usd / output_per_million_usd for prompt/completion.
+    Keys must match Chat Completions model ids exactly. Estimates use list prompt/output rates only;
+    cached-input pricing is not applied (token usage does not split cached vs uncached prompt).
+    """
+    raw = os.getenv("OPENAI_MODEL_PRICES_JSON")
+    if not raw or not str(raw).strip():
+        return None
+    try:
+        data = json.loads(str(raw).strip())
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    out: dict[str, dict[str, float]] = {}
+    for model_id, v in data.items():
+        if not isinstance(v, dict):
+            continue
+        pr = v.get("prompt_per_million_usd")
+        cr = v.get("completion_per_million_usd")
+        if pr is None:
+            pr = v.get("input_per_million_usd")
+        if cr is None:
+            cr = v.get("output_per_million_usd")
+        try:
+            if pr is not None and cr is not None:
+                out[str(model_id)] = {
+                    "prompt_per_million_usd": float(pr),
+                    "completion_per_million_usd": float(cr),
+                }
+        except (TypeError, ValueError):
+            continue
+    return out or None
+
+
+def _estimate_cost_by_model(
+    calls: list[dict[str, Any]],
+    prices: dict[str, dict[str, float]] | None,
+) -> tuple[float | None, dict[str, float], list[str]]:
+    """
+    Sum cost per API call using that call's model id.
+    Returns (total, per_model_cost, models_that_had_calls_but_no_price_entry).
+    """
+    if not calls:
+        return None, {}, []
+
+    if not prices:
+        models = sorted({str(c.get("model") or "") for c in calls if c.get("model")})
+        return None, {}, models
+
+    per_model: dict[str, float] = {}
+    missing: set[str] = set()
+    total = 0.0
+
+    for c in calls:
+        m = str(c.get("model") or "")
+        if not m:
+            continue
+        pt = int(c.get("prompt_tokens") or 0)
+        ct = int(c.get("completion_tokens") or 0)
+        rate = prices.get(m)
+        if not rate:
+            missing.add(m)
+            continue
+        p_rate = float(rate["prompt_per_million_usd"])
+        c_rate = float(rate["completion_per_million_usd"])
+        part = (pt / 1_000_000.0) * p_rate + (ct / 1_000_000.0) * c_rate
+        total += part
+        per_model[m] = per_model.get(m, 0.0) + part
+
+    if not per_model:
+        return None, {}, sorted(missing)
+
+    return (round(total, 6), {k: round(v, 6) for k, v in per_model.items()}, sorted(missing))
+
+
+def _build_token_usage_metadata(token_usage: UsageAccumulator) -> dict[str, Any]:
+    """Totals + by_model + optional cost; never includes per-call rows."""
+    prices = _load_model_prices_usd()
+    est, by_cost, missing = _estimate_cost_by_model(token_usage.calls, prices)
+    out: dict[str, Any] = {
+        "totals": token_usage.totals(),
+        "by_model": token_usage.totals_by_model(),
+    }
+    if est is not None:
+        out["estimated_cost_usd"] = est
+        out["estimated_cost_by_model_usd"] = by_cost
+    if missing:
+        out["pricing_missing_for_models"] = missing
+    if prices and est is not None:
+        out["pricing_source"] = "OPENAI_MODEL_PRICES_JSON"
+    elif not prices:
+        out["pricing_note"] = "Set OPENAI_MODEL_PRICES_JSON for per-model estimated_cost_usd."
+    return out
 
 
 def refactored_code_filename(item: dict[str, Any], snippet_id: str) -> str:
@@ -42,6 +141,7 @@ def _build_metadata_payload(
     model_validate: str,
     model_refactor: str,
     refactored_code_file: str | None,
+    token_usage: UsageAccumulator | None,
 ) -> dict[str, Any]:
     log: list[dict[str, Any]] = list(final.get("iteration_log") or [])
     best = pick_best_iteration(log) if log else None
@@ -111,6 +211,10 @@ def _build_metadata_payload(
     }
     if selection is not None:
         out["selection"] = selection
+
+    if token_usage is not None and token_usage.calls:
+        out["token_usage"] = _build_token_usage_metadata(token_usage)
+
     return out
 
 
@@ -165,7 +269,8 @@ def run_snippet(
     dataset = load_dataset(dataset_path)
     item = find_item(dataset, snippet_id)
 
-    llm = OpenAiClient.from_env()
+    usage = UsageAccumulator()
+    llm = OpenAiClient.from_env(usage=usage)
     try:
         deps = GraphDeps(
             llm=llm,
@@ -232,6 +337,7 @@ def run_snippet(
             model_validate=model_validate,
             model_refactor=model_refactor,
             refactored_code_file=ref_file,
+            token_usage=usage,
         )
         out_path = out_dir / METADATA_FILENAME
         out_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -43,7 +43,14 @@ def main(argv: list[str] | None = None) -> int:
         "--runs-dir",
         type=Path,
         default=Path(_env("DESIGN_AWARE_RUNS_DIR", "runs")),
-        help="Default: env DESIGN_AWARE_RUNS_DIR or runs",
+        help="Base output directory (default: env DESIGN_AWARE_RUNS_DIR or runs)",
+    )
+    p.add_argument(
+        "--runs-subdir",
+        default=None,
+        metavar="NAME",
+        help="Optional subfolder under --runs-dir (overrides env DESIGN_AWARE_RUNS_SUBDIR). "
+        "Snippet outputs go to runs-dir/runs-subdir/<snippet_id>/ so batch runs do not overwrite.",
     )
     sel = p.add_mutually_exclusive_group(required=True)
     sel.add_argument(
@@ -101,6 +108,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.first is not None and args.first < 1:
         p.error("--first requires N >= 1")
 
+    runs_dir = args.runs_dir
+    sub = args.runs_subdir if args.runs_subdir is not None else _env("DESIGN_AWARE_RUNS_SUBDIR", "")
+    sub = sub.strip()
+    if sub:
+        runs_dir = runs_dir / sub
+
     common = dict(
         dataset_path=args.dataset,
         prompts_dir=args.prompts_dir,
@@ -109,7 +122,7 @@ def main(argv: list[str] | None = None) -> int:
         model_refactor=args.model_refactor,
         max_refactor_retries=args.max_refactor_retries,
         recursion_limit=args.recursion_limit,
-        runs_dir=args.runs_dir,
+        runs_dir=runs_dir,
         verbose=args.verbose,
     )
 

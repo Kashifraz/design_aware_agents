@@ -261,7 +261,7 @@ def analyze_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
         },
     )
 
-    raw = deps.llm.complete_json(deps.model_analyze, prompt)
+    raw = deps.llm.complete_json(deps.model_analyze, prompt, usage_label="analyze")
     analysis = AnalyzerOutput.model_validate(_parse_json_object(raw)).model_dump()
     _log_agent(deps, "analyze", raw=raw, parsed=analysis)
 
@@ -303,9 +303,14 @@ def refactor_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
         },
     )
 
-    raw = deps.llm.complete_text(deps.model_refactor, prompt)
+    r_attempt = int(state.get("attempt", 0)) + 1
+    raw = deps.llm.complete_text(
+        deps.model_refactor,
+        prompt,
+        usage_label=f"refactor_attempt_{r_attempt}",
+    )
     refactor = RefactorOutput.model_validate(_parse_refactor_output(raw)).model_dump()
-    attempt = int(state.get("attempt", 0)) + 1
+    attempt = r_attempt
     _log_agent(deps, f"refactor (attempt {attempt})", raw=raw, parsed=refactor)
 
     return {"refactor": refactor, "attempt": attempt}
@@ -338,11 +343,16 @@ def validate_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
         },
     )
 
-    raw = deps.llm.complete_json(deps.model_validate, prompt)
+    va = int(state.get("attempt", 0))
+    raw = deps.llm.complete_json(
+        deps.model_validate,
+        prompt,
+        usage_label=f"validate_attempt_{va}",
+    )
     validation = ValidationOutput.model_validate(_coerce_validation_dict(_parse_json_object(raw))).model_dump()
     _log_agent(deps, "validate", raw=raw, parsed=validation)
 
-    attempt = int(state.get("attempt", 0))
+    attempt = va
     max_r = int(deps.max_refactor_retries)
 
     iteration_log: list[dict[str, Any]] = list(state.get("iteration_log") or [])
