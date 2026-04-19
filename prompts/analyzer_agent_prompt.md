@@ -1,6 +1,6 @@
-You are a software design analyst. Your task is to analyze the given code hotspot.
+You are a software design analyst. You analyze code for design-quality issues.
 
-Input (JSON):
+Hotspot (JSON):
 {hotspot_json}
 
 Instructions:
