@@ -1,0 +1,101 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:14:43.467643+00:00",
+  "run": {
+    "snippet_id": "snippet25",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet25",
+    "snippet_index": 25,
+    "file_name": "snippet25.js",
+    "language": "javascript",
+    "extension": ".js",
+    "design_issues": "complex method, large method, complex conditional"
+  },
+  "analysis": {
+    "root_cause": "The `validateBlock` function is a single monolithic validator that mixes shared validation, type dispatch, and extensive per-block validation logic (including nested loops and many early-return conditionals) into one large method.",
+    "violated_principle": [
+      "SRP",
+      "KISS",
+      "Separation of Concerns",
+      "DRY"
+    ],
+    "explanation": "All validation responsibilities for every block type are implemented inside one exported function using a large `switch` plus many guard clauses and nested `for` loops. This creates a complex method and complex conditional structure because the function must handle: (1) generic block shape checks, (2) type-specific rules for many distinct block schemas, (3) repeated URL/path validation logic (e.g., image URLs, avatar URLs, carousel item links), and (4) quiz/poll correctness rules with additional conditional branching. The result is a high cognitive load and tight coupling between unrelated block schemas, making the function hard to read, test, and extend (adding a new block type requires editing the same large method, and repeated validation patterns are not centralized)."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method with validator dispatch map",
+    "reasoning": "The main issue is a large, complex method with a long switch statement and repeated conditional logic. This refactoring keeps behavior the same while reducing cognitive load by extracting shared validation helpers and moving each block-type validation into small focused functions. A validator map replaces the large switch, improving readability and making future extensions easier without changing the overall validation flow.",
+    "refactored_code_file": "snippet25_refactored.js"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 78,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "Behavior change risk: validateQuizOrPollBlock now assumes block.data exists (it does after validateBaseBlock), but it also assumes data.question/options are present; original code would throw if data missing, though base validation prevents data null/undefined only, not missing properties.",
+      "Behavior change risk: isValidUrlOrPath and isValidCarouselLink no longer mirror the original try/catch semantics exactly for non-string inputs (they rely on startsWith throwing; they catch in isValidUrlOrPath but not in isValidCarouselLink).",
+      "Behavior change risk: validateQuizOrPollBlock uses validateQuizOrPollOptions(data.options) without re-checking options type beyond Array.isArray; original code did the same, so likely fine, but error messages may differ slightly."
+    ],
+    "comments": "Refactor improves the target design issues: the large/complex method is decomposed into smaller validators and the complex switch is replaced with a dispatch map, reducing cyclomatic complexity and improving readability/maintainability. However, there are some potential behavior/message differences due to URL helper functions (notably isValidCarouselLink lacking try/catch) and slight differences in how invalid inputs are handled, so behavior preservation is not fully certain."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 44902,
+      "completion_tokens": 9656,
+      "total_tokens": 54558,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 27865,
+        "completion_tokens": 1161,
+        "total_tokens": 29026
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 17037,
+        "completion_tokens": 8495,
+        "total_tokens": 25532
+      }
+    },
+    "estimated_cost_usd": 0.177042,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.007024,
+      "gpt-5.4": 0.170018
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

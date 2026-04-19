@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:04:32.846464+00:00",
+  "run": {
+    "snippet_id": "snippet6",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet6",
+    "snippet_index": 6,
+    "file_name": "snippet6.py",
+    "language": "python",
+    "extension": ".py",
+    "design_issues": "complex method"
+  },
+  "analysis": {
+    "root_cause": "The method validate_selected_columns is doing multiple, tightly coupled validation responsibilities (type checking, required-field presence checks, per-field schema validation, and optional-field validation) all in one large function, causing it to grow in complexity as the validation rules expand.",
+    "violated_principle": [
+      "SRP",
+      "KISS",
+      "Separation of Concerns"
+    ],
+    "explanation": "validate_selected_columns performs several distinct validation tasks in sequence: it validates the overall input type, enforces required keys ('x' and 'y'), validates the internal types and constraints for 'x' and 'y' (including non-empty list and element types), and then separately validates optional keys ('groupBy' and 'label'). Because all these concerns are implemented inline with repeated conditional checks and nested branching, the method becomes long and harder to read, test, and modify. Any change to validation rules (e.g., adding new fields or altering constraints) requires editing the same complex method, increasing the likelihood of errors and reducing maintainability."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The validation logic is split into small helper methods, each responsible for one concern: overall type checking, required field validation, field-specific validation, and optional field validation. This keeps the main method short and easier to read, test, and extend while preserving the original behavior and error messages.",
+    "refactored_code_file": "snippet6_refactored.py"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactor applies Extract Method to split a complex validation method into smaller focused helpers, reducing complexity and improving readability/maintainability. The validation logic and error messages are effectively preserved, including required-field checks, type checks, and optional field handling for groupBy/label."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 7647,
+      "completion_tokens": 1941,
+      "total_tokens": 9588,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 4341,
+        "completion_tokens": 562,
+        "total_tokens": 4903
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 3306,
+        "completion_tokens": 1379,
+        "total_tokens": 4685
+      }
+    },
+    "estimated_cost_usd": 0.010256,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.001571,
+      "gpt-5.4-mini": 0.008685
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

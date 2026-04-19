@@ -1,0 +1,100 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:11:12.063727+00:00",
+  "run": {
+    "snippet_id": "snippet21",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet21",
+    "snippet_index": 21,
+    "file_name": "snippet21.java",
+    "language": "java",
+    "extension": ".java",
+    "design_issues": "complex method, large method"
+  },
+  "analysis": {
+    "root_cause": "The method generateResultsheet() combines multiple responsibilities—data retrieval (course, student, enrollments, assessments, grades), business validation (enrollment status), grade computation (per-assessment percentage/weighted score), conditional persistence/derivation of course grade, and DTO assembly—into a single large procedural flow.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "Because generateResultsheet() performs end-to-end orchestration and computation in one place, it becomes complex and large: it contains several distinct phases (fetch/validate entities, build assessment-grade list with calculations, decide whether to calculate course grade, then map everything into ResultsheetDTO). This violates SRP and Separation of Concerns since the method mixes domain logic (grading math and enrollment rules) with infrastructure concerns (repository calls) and presentation mapping (DTO population). The conditional course-grade calculation and repeated repository lookups further increase branching and cognitive load, making the method harder to read, test, and maintain—classic symptoms of a complex/large method."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The original method is a large procedural flow that mixes retrieval, validation, calculation, conditional grade resolution, and DTO mapping. Extracting focused helper methods reduces complexity and improves readability while preserving behavior. This keeps the refactoring minimal and directly addresses the large/complex method issue without changing the overall design or logic.",
+    "refactored_code_file": "snippet21_refactored.java"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 78,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "Behavior change risk: gradedCount logic now increments when assessmentGrade.getGradedAt() != null, whereas original incremented only when a Grade was present (which may differ if gradedAt is null even when grade exists).",
+      "Potential NPE risk: buildResultsheet still calls course.getMajor().getName(); original did the same, but refactor makes it harder to see/guard.",
+      "Potential NPE risk: buildAssessmentGrade uses g.getMarksObtained() and assessment.getMaximumMarks() similarly to original; no new guards added."
+    ],
+    "comments": "The refactor substantially reduces method complexity/size by extracting multiple responsibilities into helper methods (course/student retrieval, enrollment validation, assessment grade building, course grade resolution, and DTO construction). This addresses the 'complex method' and 'large method' issues as a bundle. However, there is a likely subtle behavior change: gradedCount is computed based on gradedAt != null instead of whether a Grade exists for the assessment. If a Grade can exist with null gradedAt, the counts will differ from the original. Other logic appears equivalent, but the gradedCount discrepancy makes behavior preservation uncertain."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 19416,
+      "completion_tokens": 5449,
+      "total_tokens": 24865,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 11859,
+        "completion_tokens": 1031,
+        "total_tokens": 12890
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 7557,
+        "completion_tokens": 4418,
+        "total_tokens": 11975
+      }
+    },
+    "estimated_cost_usd": 0.088823,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.003661,
+      "gpt-5.4": 0.085163
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

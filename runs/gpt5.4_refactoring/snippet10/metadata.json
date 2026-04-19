@@ -1,0 +1,101 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:01:11.731705+00:00",
+  "run": {
+    "snippet_id": "snippet10",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet10",
+    "snippet_index": 10,
+    "file_name": "snippet10.js",
+    "language": "javascript",
+    "extension": ".js",
+    "design_issues": "complex method, large method"
+  },
+  "analysis": {
+    "root_cause": "A single function (generateSectionHTML) is responsible for handling many distinct section types and rendering logic via a large switch statement, combining data extraction, formatting, logging, and HTML templating in one place.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "DRY",
+      "KISS"
+    ],
+    "explanation": "The method is complex and large because it contains separate rendering branches for Profile, Experience, Education, Skills, Languages, Projects, Publications, Awards, and References. Each branch repeats similar patterns (null/empty checks, mapping arrays to HTML strings, default fallbacks, and wrapping results in a section container) while also performing side effects (console.log) and relying on external formatting (formatDate). This concentrates multiple responsibilities—section dispatching, data normalization, HTML generation, and debugging output—into one function, making it harder to read, test, extend, and maintain. Adding a new section or changing the HTML structure requires modifying this same large method, increasing the likelihood of errors and further duplication across cases."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The large switch in generateSectionHTML was split into small, section-specific renderer functions while keeping the original control flow, logging, argument usage, and HTML templates intact. This reduces method size and complexity without introducing a renderer-map API mismatch or changing how unknown and known sections are dispatched.",
+    "refactored_code_file": "snippet10_refactored.js"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "Skills section wrapper changed: it now hardcodes the wrapper markup instead of using renderSectionWrapper, which could diverge from the wrapper used elsewhere (e.g., indentation/whitespace/structure).",
+      "Profile section still returns a hardcoded wrapper instead of using renderSectionWrapper, increasing inconsistency risk.",
+      "Current snippet shows renderSectionWrapper but not the sectionRenderers mapping from the previous attempt; if the surrounding code differs, integration behavior could change."
+    ],
+    "comments": "The refactoring extracts repeated section rendering logic into smaller functions and reduces the original large/complex generateSectionHTML method by moving per-section logic into dedicated render*Section functions. However, the current snippet reintroduces a switch-based dispatcher in generateSectionHTML, so the bundle improvement over the previous attempt is partial (previous attempt already used a renderer map to avoid the switch). Behavior is likely mostly preserved, but there are inconsistencies in wrapper usage (Skills/Profile) and the snippet may not include the same integration context as the previous version, so exact behavior preservation is uncertain."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 2,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 23861,
+      "completion_tokens": 5899,
+      "total_tokens": 29760,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 14655,
+        "completion_tokens": 1042,
+        "total_tokens": 15697
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 9206,
+        "completion_tokens": 4857,
+        "total_tokens": 14063
+      }
+    },
+    "estimated_cost_usd": 0.100103,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.004234,
+      "gpt-5.4": 0.09587
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

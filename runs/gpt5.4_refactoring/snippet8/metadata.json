@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T05:59:30.856071+00:00",
+  "run": {
+    "snippet_id": "snippet8",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet8",
+    "snippet_index": 8,
+    "file_name": "snippet8.php",
+    "language": "php",
+    "extension": ".php",
+    "design_issues": "complex method"
+  },
+  "analysis": {
+    "root_cause": "The method handle_form_submission() combines multiple responsibilities—request parsing, security/nonce verification, captcha validation, dynamic field configuration extraction, per-field validation, error aggregation, and persistence—into a single large controller-style function.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "handle_form_submission() performs end-to-end form submission handling in one place: it reads and validates input (form_id, nonce, captcha), fetches the form configuration from the database, iterates through dynamically defined fields to validate required/email rules, builds a structured submission payload, formats user-facing error messages, and finally saves the submission and returns JSON responses. This creates a complex, tightly coupled flow where changes to validation rules, captcha logic, error formatting, or persistence all require editing the same method. The branching and nested checks (multiple early exits, dynamic field handling, and error collection) increase cognitive load and make the code harder to test and maintain, directly violating SRP/Separation of Concerns and making the implementation less KISS."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The complex controller method is simplified by extracting each major step into small private methods: reading the form ID, verifying the nonce, validating captcha, extracting fields, collecting submission data, and sending the save result. This keeps the flow of handle_form_submission() easy to read while preserving original behavior, including the same request sources, validation order, error messages, and even the same assumptions about array keys and POST values.",
+    "refactored_code_file": "snippet8_refactored.php"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactor further reduces the complexity of handle_form_submission by extracting nonce/captcha/field retrieval/validation/result sending into dedicated private methods. Compared to the previous refactor, it is strictly better in structure and readability (more cohesive helpers, clearer early returns). Behavior appears preserved: same form_id/nonce/captcha checks, same field validation logic, same error formatting (implode with <br>), and same success/error JSON responses. No new functional changes or obvious edge-case differences were introduced."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 3,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 35,
+        "issue_resolved": false
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 13082,
+      "completion_tokens": 3561,
+      "total_tokens": 16643,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 7648,
+        "completion_tokens": 926,
+        "total_tokens": 8574
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 5434,
+        "completion_tokens": 2635,
+        "total_tokens": 8069
+      }
+    },
+    "estimated_cost_usd": 0.055797,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.002687,
+      "gpt-5.4": 0.05311
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

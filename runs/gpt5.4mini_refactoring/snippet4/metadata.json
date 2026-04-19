@@ -1,0 +1,95 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:03:54.094505+00:00",
+  "run": {
+    "snippet_id": "snippet4",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet4",
+    "snippet_index": 4,
+    "file_name": "snippet4.php",
+    "language": "php",
+    "extension": ".php",
+    "design_issues": "complex conditional"
+  },
+  "analysis": {
+    "root_cause": "The method mixes multiple responsibilities and uses nested/compound conditionals to decide how to escape and quote each CSV field, making the per-element formatting logic hard to read and maintain.",
+    "violated_principle": [
+      "KISS",
+      "SRP"
+    ],
+    "explanation": "Inside the loop, the code performs several formatting steps: it mutates the input value (escaping quotes), then uses a compound conditional (checking for comma, quote, or newline) to decide whether to wrap the value in quotes, and finally concatenates delimiters. This results in a complex conditional that encodes CSV rules inline. Because the CSV-escaping/quoting policy is embedded directly in the loop with multiple checks and string operations, the logic becomes harder to verify, extend (e.g., other CSV edge cases), or reuse, violating KISS and indicating SRP concerns (field formatting/escaping and row assembly are tightly coupled)."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The row-building loop is kept intact, but the CSV field escaping/quoting rules are moved into a dedicated helper. This removes the complex conditional from the main method, improves readability, and preserves the original behavior by keeping the same escaping and quoting logic in one place.",
+    "refactored_code_file": "snippet4_refactored.php"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "Extracting the value-escaping/quoting logic into format_csv_value reduces the complexity of the array_to_csv_row method by removing the conditional block from the loop, addressing the 'complex conditional' design issue as a bundle. The logic inside format_csv_value matches the original (same escaping of quotes and same conditional quoting based on comma/quote/newline). No new control-flow or data-handling changes were introduced beyond method extraction."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 2,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "yes",
+        "improvement_score": 75,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 4670,
+      "completion_tokens": 1277,
+      "total_tokens": 5947,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 2433,
+        "completion_tokens": 552,
+        "total_tokens": 2985
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 2237,
+        "completion_tokens": 725,
+        "total_tokens": 2962
+      }
+    },
+    "estimated_cost_usd": 0.006117,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.001177,
+      "gpt-5.4-mini": 0.00494
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

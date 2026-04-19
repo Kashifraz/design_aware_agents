@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:06:39.982145+00:00",
+  "run": {
+    "snippet_id": "snippet11",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet11",
+    "snippet_index": 11,
+    "file_name": "snippet11.py",
+    "language": "python",
+    "extension": ".py",
+    "design_issues": "complex method, large method"
+  },
+  "analysis": {
+    "root_cause": "The `patch` endpoint is doing multiple responsibilities in one place: authorization/project lookup, data-table retrieval, request payload validation (including schema/type coercion), row/column validation, and persistence/update with error handling. This results in a single, monolithic method that mixes concerns and grows large as validation rules expand.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "The method contains end-to-end workflow logic: it queries the project and handles 404s, fetches the data table and handles missing data, validates the structure of `edits`, loads schema and current data, performs per-row/per-column validation with type coercion for multiple types, accumulates validation errors, and finally applies edits and saves to the database with broad exception handling. Because all these steps are implemented inline (including type conversion rules and bounds/schema checks), the method becomes complex and large, making it harder to read, test, and modify. Any change to validation rules, schema typing, or persistence behavior requires editing the same method, increasing coupling and reducing maintainability—classic symptoms of SRP and separation-of-concerns violations."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The patch method is refactored by moving the row/column validation and type coercion logic into a private helper on the same class. This keeps the endpoint behavior the same while reducing the size and complexity of the main method, improving readability and maintainability with minimal structural change.",
+    "refactored_code_file": "snippet11_refactored.py"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactoring extracts the large validation loop into _validate_edits, reducing the complexity/size of patch and addressing the 'complex method' and 'large method' issues as a bundle. The current snippet appears to preserve the original behavior and error handling structure (same validation rules, same response payloads/status codes, same application logic). No new risks are introduced beyond the usual method extraction considerations (e.g., reliance on self._validate_edits existing), which is satisfied in the provided code."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 2,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 75,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 75,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 15089,
+      "completion_tokens": 3688,
+      "total_tokens": 18777,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 9017,
+        "completion_tokens": 748,
+        "total_tokens": 9765
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 6072,
+        "completion_tokens": 2940,
+        "total_tokens": 9012
+      }
+    },
+    "estimated_cost_usd": 0.020522,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.002738,
+      "gpt-5.4-mini": 0.017784
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

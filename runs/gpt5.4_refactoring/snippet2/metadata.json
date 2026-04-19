@@ -1,0 +1,97 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T05:56:14.788266+00:00",
+  "run": {
+    "snippet_id": "snippet2",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet2",
+    "snippet_index": 2,
+    "file_name": "snippet2.php",
+    "language": "php",
+    "extension": ".php",
+    "design_issues": "code duplication"
+  },
+  "analysis": {
+    "root_cause": "The three AJAX handlers (ajax_add_field, ajax_update_field, ajax_remove_field) repeat the same request-validation and authorization boilerplate (nonce verification, capability checks, form_id==0 early return, and Form_Plugin_Form_Builder instantiation) instead of sharing a common helper/abstraction.",
+    "violated_principle": [
+      "DRY",
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "Each method contains nearly identical blocks: (1) wp_verify_nonce($_POST['nonce'], 'form_plugin_nonce') with the same wp_die message, (2) current_user_can('manage_options') with the same wp_die message, (3) parsing/sanitizing common inputs, (4) the same conditional branch for new forms where form_id===0 returns a success JSON response, and (5) creating a new Form_Plugin_Form_Builder instance before delegating to a single operation. This duplication increases maintenance cost and risk of inconsistencies (e.g., changing nonce/capability logic or error handling would require updating all three methods). It also mixes cross-cutting concerns (security/authorization/response handling) with the specific business action (add/update/remove), reducing cohesion and violating SRP/Separation of Concerns."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "This refactor removes duplicated nonce verification, capability checks, new-form response handling, and form builder creation by extracting them into small helper methods. To preserve behavior, the handlers still access $_POST values directly where the original did, and they explicitly return immediately after sending the new-form JSON response so no further processing can occur for form_id === 0.",
+    "refactored_code_file": "snippet2_refactored.php"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactor further reduces duplication by extracting common logic into is_new_form(), send_new_form_response(), and create_form_builder(), in addition to verify_ajax_request(). This improves maintainability and reduces repeated blocks across add/update/remove handlers. Behavior appears preserved: nonce/capability checks are still performed, new-form early responses still return the same success/message, and existing-form paths still call the same builder methods and return wp_send_json($result). No new control-flow or sanitization changes were introduced beyond consolidating the same checks."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 2,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 75,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 11892,
+      "completion_tokens": 2815,
+      "total_tokens": 14707,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 6795,
+        "completion_tokens": 821,
+        "total_tokens": 7616
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 5097,
+        "completion_tokens": 1994,
+        "total_tokens": 7091
+      }
+    },
+    "estimated_cost_usd": 0.045038,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.002385,
+      "gpt-5.4": 0.042653
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

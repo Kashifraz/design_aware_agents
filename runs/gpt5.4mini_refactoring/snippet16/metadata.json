@@ -1,0 +1,100 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:09:17.607803+00:00",
+  "run": {
+    "snippet_id": "snippet16",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet16",
+    "snippet_index": 16,
+    "file_name": "snippet16.php",
+    "language": "php",
+    "extension": ".php",
+    "design_issues": "code duplication"
+  },
+  "analysis": {
+    "root_cause": "Repeated, inline authorization and request-user extraction logic (and similar role checks) are duplicated across multiple controller methods (show/create/update/delete) instead of being centralized into shared helper/middleware methods.",
+    "violated_principle": [
+      "DRY",
+      "Separation of Concerns",
+      "SRP",
+      "KISS"
+    ],
+    "explanation": "Each method independently performs the same steps: read $this->request->user fields, validate authentication, check role membership (admin/manager), and return the same unauthorized/forbidden responses. This duplication increases maintenance cost and inconsistency risk (e.g., if the role list, auth requirements, or error messages change, the change must be replicated in every method). It also mixes authorization concerns with business logic for discount retrieval/creation/update/deletion, violating separation of concerns and SRP by embedding cross-cutting access-control logic directly inside each endpoint."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The repeated authentication and role-check logic has been centralized into a private helper method to remove duplication, improve readability, and keep the controller actions focused on their core responsibilities while preserving behavior.",
+    "refactored_code_file": "snippet16_refactored.php"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 75,
+    "preserves_behavior": "yes",
+    "new_risks": [
+      "authorizeDiscountAccess returns a string message with different wording than the original for each action (though still semantically equivalent).",
+      "authorizeDiscountAccess no longer checks/uses $id; if future logic depended on $id during authorization, this refactor would not cover it."
+    ],
+    "comments": "The refactor extracts the repeated authentication/role/authorization checks into authorizeDiscountAccess(), reducing code duplication across show/create/update/delete. Behavior is largely preserved: same required user fields, same allowed roles, and same unauthorized/forbidden outcomes (with only message text varying by action). No major logic changes were introduced beyond consolidating the duplicated guard clauses."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "yes",
+        "improvement_score": 75,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 70,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 33540,
+      "completion_tokens": 7356,
+      "total_tokens": 40896,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 20855,
+        "completion_tokens": 857,
+        "total_tokens": 21712
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 12685,
+        "completion_tokens": 6499,
+        "total_tokens": 19184
+      }
+    },
+    "estimated_cost_usd": 0.044001,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.005242,
+      "gpt-5.4-mini": 0.038759
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

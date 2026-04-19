@@ -1,0 +1,95 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T05:57:17.181947+00:00",
+  "run": {
+    "snippet_id": "snippet4",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet4",
+    "snippet_index": 4,
+    "file_name": "snippet4.php",
+    "language": "php",
+    "extension": ".php",
+    "design_issues": "complex conditional"
+  },
+  "analysis": {
+    "root_cause": "The method mixes multiple responsibilities and uses nested/compound conditionals to decide how to escape and quote CSV fields, making the control flow harder to read and maintain.",
+    "violated_principle": [
+      "KISS",
+      "SRP"
+    ],
+    "explanation": "Inside the loop, the code performs several intertwined steps: (1) delimiter management (comma insertion), (2) escaping quotes, and (3) deciding whether to wrap the value in quotes based on multiple checks (comma, quote, newline). The decision logic is implemented as a complex conditional with repeated string searches and manual escaping rules, which increases cognitive load and makes it easy to introduce subtle CSV-formatting bugs. A simpler approach would separate concerns (e.g., dedicated helpers for escaping/quoting) or rely on a standard CSV writer, reducing conditional complexity and improving readability."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The complex conditional for deciding when and how to quote CSV values is moved into small dedicated helper methods. This reduces cognitive load in the loop, separates delimiter handling from CSV field formatting, and preserves the original behavior with minimal structural change.",
+    "refactored_code_file": "snippet4_refactored.php"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "Extracting the conditional CSV-quoting logic into helper methods reduces the complexity of the main loop (the target 'complex conditional' issue) by isolating quote-escaping and quote-requirement checks. The behavior appears preserved: escaping of double quotes via str_replace('\"','\"\"') is identical, and quoting is applied when the escaped value contains comma, quote, or newline. The only minor difference is that requires_csv_quotes checks the escaped value rather than the original, but since escaping only changes quotes to doubled quotes, the set of conditions (comma/quote/newline presence) remains effectively equivalent for deciding whether to wrap in quotes."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 70,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 4903,
+      "completion_tokens": 1563,
+      "total_tokens": 6466,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 2595,
+        "completion_tokens": 714,
+        "total_tokens": 3309
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 2308,
+        "completion_tokens": 849,
+        "total_tokens": 3157
+      }
+    },
+    "estimated_cost_usd": 0.019916,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.001411,
+      "gpt-5.4": 0.018505
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

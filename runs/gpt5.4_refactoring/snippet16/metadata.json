@@ -1,0 +1,102 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:07:11.072624+00:00",
+  "run": {
+    "snippet_id": "snippet16",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet16",
+    "snippet_index": 16,
+    "file_name": "snippet16.php",
+    "language": "php",
+    "extension": ".php",
+    "design_issues": "code duplication"
+  },
+  "analysis": {
+    "root_cause": "Repeated, inline authorization and request-parsing/normalization logic across multiple controller actions (show/create/update/delete), instead of being centralized into shared helper methods or middleware.",
+    "violated_principle": [
+      "DRY",
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "Each method independently performs the same steps: extract userId/userRole from the request, check authentication, check role membership (admin/manager), and handle exceptions with near-identical logging/500 responses. Additionally, create/update both implement similar data mapping and null/empty-string normalization for the same fields, and both implement the same mutual-exclusivity validation for product_id vs category_id. This duplication increases maintenance cost and risk of inconsistencies (e.g., different error messages or normalization rules drifting between actions), and it mixes concerns (authorization, input transformation/validation, and controller response formatting) within each action rather than delegating them to reusable components."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The main issue is duplicated authorization, exception handling, request data extraction, nullable field normalization, and mutual-exclusivity validation across controller actions. This refactoring introduces small helper methods to centralize those repeated behaviors while preserving the original flow, responses, and business rules. The result is more maintainable and consistent code with minimal structural change.",
+    "refactored_code_file": "snippet16_refactored.php"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 78,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "authorizeDiscountAccess now returns null on success; callers check `if ($authResponse)` which is truthy-safe, but any future change to response types could break this pattern.",
+      "getRequestValue uses `$json[$field] ?? $this->request->getPost($field)`; if a JSON key exists with a null value, it will return null instead of falling back to POST (original code used `??` similarly, but behavior may differ when JSON contains explicit nulls).",
+      "normalizeNullableValue uses `empty($value)` which converts values like 0 to null; original code also used `empty(...) ? null : ...` for several fields, but this helper is now reused more broadly and could change behavior for numeric fields where 0 is meaningful.",
+      "getCreateDiscountData always sets keys using getRequestValue; unlike the original, it does not explicitly convert only specific fields after building $data, but it does normalize them in a loop—behavior should be similar, but edge cases around missing vs empty inputs may differ."
+    ],
+    "comments": "The refactor reduces duplication by extracting shared authorization logic and shared request/normalization/mutual-exclusivity validation across show/create/update/delete. This directly addresses the code duplication issue. However, behavior preservation is not fully guaranteed due to potential edge-case differences introduced by the generalized helpers (notably `empty()` -> null semantics and JSON-null vs missing-key fallback). Overall improvement is substantial but not provably identical in all input scenarios."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 55,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 75,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 31705,
+      "completion_tokens": 6919,
+      "total_tokens": 38624,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 19392,
+        "completion_tokens": 1142,
+        "total_tokens": 20534
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 12313,
+        "completion_tokens": 5777,
+        "total_tokens": 18090
+      }
+    },
+    "estimated_cost_usd": 0.122743,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.005306,
+      "gpt-5.4": 0.117438
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

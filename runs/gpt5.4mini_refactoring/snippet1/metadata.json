@@ -1,0 +1,99 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:02:56.988513+00:00",
+  "run": {
+    "snippet_id": "snippet1",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet1",
+    "snippet_index": 1,
+    "file_name": "snippet1.py",
+    "language": "python",
+    "extension": ".py",
+    "design_issues": "code duplication"
+  },
+  "analysis": {
+    "root_cause": "The put() and patch() methods duplicate the same control flow: fetching/authorizing the Project, retrieving or creating ChartConfig, instantiating ChartConfigSerializer with nearly identical context, validating, saving, and returning success/error responses—differing only by the serializer partial flag and the HTTP semantics.",
+    "violated_principle": [
+      "DRY (Don't Repeat Yourself)",
+      "SRP (Single Responsibility Principle)",
+      "KISS"
+    ],
+    "explanation": "Both methods repeat the same blocks (Project.objects.get with identical error handling, ChartConfig.objects.get with identical exception handling, serializer construction with the same context, and the same is_valid/save/Response pattern). This duplication increases maintenance cost and risk of inconsistencies: any change to authorization logic, serializer context, error messages, or response formatting must be applied in two places, and subtle differences (e.g., partial=False vs partial=True) are easy to accidentally introduce or misalign. The repeated orchestration logic also mixes concerns (resource lookup/authorization, upsert behavior, and HTTP response handling) within each method rather than centralizing shared behavior."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method (helper for shared project lookup and serializer handling)",
+    "reasoning": "The put() and patch() methods share the same orchestration logic for project authorization, chart config retrieval/creation, serializer setup, validation, saving, and response handling. Extracting the shared parts into small helper methods removes duplication, keeps the behavior the same, and makes the only meaningful difference between PUT and PATCH explicit: the serializer's partial flag.",
+    "refactored_code_file": "snippet1_refactored.py"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "Behavior change risk: _get_project returns None instead of raising/handling; callers now check None, which matches the original 404 path but could differ if other exceptions were previously caught (e.g., unexpected ORM errors).",
+      "Potential DRF serializer context/partial behavior: _save_chart_config passes partial=partial in both update and create paths; this matches the original for PUT/PATCH, but if the original create path intentionally omitted partial (it did not set partial explicitly), this could be a subtle difference depending on serializer defaults."
+    ],
+    "comments": "The refactor removes duplicated project lookup and consolidates the get-or-create serializer/save/response logic into helpers, directly addressing the code duplication issue. However, there is slight behavioral uncertainty around serializer partial handling for the create path (original code did not explicitly set partial when creating), and around exception handling semantics in _get_project."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 9090,
+      "completion_tokens": 2453,
+      "total_tokens": 11543,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 5033,
+        "completion_tokens": 973,
+        "total_tokens": 6006
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 4057,
+        "completion_tokens": 1480,
+        "total_tokens": 5537
+      }
+    },
+    "estimated_cost_usd": 0.011926,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.002223,
+      "gpt-5.4-mini": 0.009703
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

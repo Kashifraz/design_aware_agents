@@ -1,0 +1,97 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:11:39.158020+00:00",
+  "run": {
+    "snippet_id": "snippet22",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet22",
+    "snippet_index": 22,
+    "file_name": "snippet22.java",
+    "language": "java",
+    "extension": ".java",
+    "design_issues": "complex method, complex conditional"
+  },
+  "analysis": {
+    "root_cause": "The method mixes multiple responsibilities—parsing/normalizing inputs and applying a growing set of content-type/filename matching rules—into one long chain of nested conditionals, making the decision logic complex and hard to extend or reason about.",
+    "violated_principle": [
+      "KISS",
+      "SRP",
+      "Separation of Concerns",
+      "Open/Closed Principle"
+    ],
+    "explanation": "The logic for determining file type is implemented as a sequential if/else-if chain with many string containment checks and filename extension checks (including repeated null checks and toLowerCase calls). As new formats are added, this chain will grow, increasing cyclomatic complexity and making it harder to verify correctness and precedence (e.g., overlapping matches like 'pdf' vs other substrings). Because the method directly embeds all matching rules, it violates SRP/KISS by combining normalization and rule evaluation in one place, and it violates Open/Closed by requiring modification of the method for every new file type or matching rule."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "This refactor keeps the original case-sensitive contentType matching behavior while reducing the complexity of the main decision method by extracting filename-extension checks into small helper methods. It improves readability and maintainability without changing the matching rules or precedence.",
+    "refactored_code_file": "snippet22_refactored.java"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 55,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactoring extracts the filename-extension checks into helper methods, reducing complexity in the main method and simplifying the conditional expressions (addressing both 'complex method' and 'complex conditional' as a bundle). Behavior is preserved: null contentType still returns DOC; contentType checks remain case-sensitive as in the original; filename extension checks still use filename.toLowerCase().endsWith(...) with the same extensions (.ppt, .doc, .docx). Compared to the previous attempt, this version is slightly simpler (fewer generic helpers), with no added behavioral risk."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 2,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 70,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 55,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 55,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 5771,
+      "completion_tokens": 1646,
+      "total_tokens": 7417,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 3037,
+        "completion_tokens": 699,
+        "total_tokens": 3736
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 2734,
+        "completion_tokens": 947,
+        "total_tokens": 3681
+      }
+    },
+    "estimated_cost_usd": 0.007793,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.001481,
+      "gpt-5.4-mini": 0.006312
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

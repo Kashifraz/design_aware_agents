@@ -1,0 +1,100 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:02:04.034352+00:00",
+  "run": {
+    "snippet_id": "snippet11",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet11",
+    "snippet_index": 11,
+    "file_name": "snippet11.py",
+    "language": "python",
+    "extension": ".py",
+    "design_issues": "complex method, large method"
+  },
+  "analysis": {
+    "root_cause": "The `patch` endpoint method is doing multiple responsibilities end-to-end (authorization/project lookup, data-table retrieval, request schema validation, per-cell type conversion/validation, error aggregation, persistence of edited data, and response formatting) inside a single large controller method.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "The method mixes concerns that should be separated into smaller units: (1) it queries and authorizes the project, (2) fetches the data table and its schema/data, (3) validates the structure of `edits`, (4) iterates through rows/columns performing type coercion and validation based on schema, (5) accumulates validation errors, (6) applies and persists edits, and (7) constructs multiple HTTP responses for different failure modes. This results in a complex, hard-to-read control flow with nested loops and many early returns, making the endpoint difficult to test, maintain, and extend (e.g., adding new types like date, changing validation rules, or altering persistence behavior would require modifying this same large method)."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The patch method was reduced by extracting tightly scoped helper methods for project lookup, data table lookup, edit payload validation, edit validation/conversion, and persistence. To preserve behavior more confidently, the refactor keeps the original control flow, response messages, validation order, and conversion/error formatting intact, and avoids brittle Response-type branching by using helpers that either return domain values or raise the same model exceptions already handled by the endpoint.",
+    "refactored_code_file": "snippet11_refactored.py"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "Behavior change risk: _is_valid_edits_payload returns only a boolean and the error response detail/status differs from the previous refactor (previous version returned a Response with specific message/status).",
+      "Behavior change risk: _build_validated_edits now silently drops rows where validated_row_edits is empty; previously validated_edits only included rows with validated_row_edits, but the exact handling of validation_errors vs empty rows could differ in edge cases.",
+      "Behavior change risk: _get_project now relies on catching Project.DoesNotExist in patch; if _get_project is ever changed to return a Response or other type, the try/except pattern could break."
+    ],
+    "comments": "The refactoring substantially reduces the complexity/size of the patch method by extracting multiple responsibilities into helper methods (_get_project, _get_data_table, _is_valid_edits_payload, _build_validated_edits, _validate_row_edits, _validate_cell_edit, _save_edits). This directly addresses the 'complex method' and 'large method' design issues. Compared to the previous refactor, it is cleaner and more modular, but there are some potential behavior/response-shape differences (notably around payload validation and how empty validated rows are handled), so preservation of exact behavior is marked uncertain."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 2,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 16830,
+      "completion_tokens": 4827,
+      "total_tokens": 21657,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 10099,
+        "completion_tokens": 1181,
+        "total_tokens": 11280
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 6731,
+        "completion_tokens": 3646,
+        "total_tokens": 10377
+      }
+    },
+    "estimated_cost_usd": 0.075014,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.003496,
+      "gpt-5.4": 0.071517
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

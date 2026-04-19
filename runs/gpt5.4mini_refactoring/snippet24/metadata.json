@@ -1,0 +1,99 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:12:28.823015+00:00",
+  "run": {
+    "snippet_id": "snippet24",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet24",
+    "snippet_index": 24,
+    "file_name": "snippet24.js",
+    "language": "javascript",
+    "extension": ".js",
+    "design_issues": "code duplication"
+  },
+  "analysis": {
+    "root_cause": "Repeated boilerplate request/response handling logic (try/catch, apiClient call, response.data.success checks, and error throwing) is duplicated across each service method instead of being centralized into a shared helper.",
+    "violated_principle": [
+      "DRY",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "Each method in postService (getPosts, getPost, createPost, updatePost, deletePost, publishPost, unpublishPost, previewPost) follows the same pattern: build/choose a URL, call apiClient.<verb>, check response.data.success, return a similarly nested payload, and otherwise throw a new Error with a fallback message, all wrapped in an identical try/catch that simply rethrows. This duplication increases maintenance cost and inconsistency risk (e.g., different return shapes like response.data.data vs response.data.data.post, and repeated error-message strings). Centralizing the common request/response/error handling into a single utility (e.g., apiRequest wrapper) would remove the repeated code and make each method focus only on endpoint-specific details."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method (centralized request handler)",
+    "reasoning": "This refactor removes repeated try/catch, success checks, and error construction by extracting a shared apiRequest helper. The helper preserves the original response handling and keeps each service method focused on endpoint-specific URL and payload details, while deletePost explicitly returns undefined to match prior behavior.",
+    "refactored_code_file": "snippet24_refactored.js"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 95,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "deletePost now explicitly returns undefined after awaiting apiRequest; original version returned nothing implicitly—behavior is likely the same but not guaranteed if callers rely on exact return value.",
+      "apiRequest now wraps the requestFn call in a try/catch and rethrows; this is behaviorally similar, but it changes stack traces slightly compared to the original per-method try/catch."
+    ],
+    "comments": "The refactor further centralizes duplicated request/response handling into apiRequest (Extract Method), reducing repeated try/catch, success checks, and error throwing across all service methods. Compared to the previous refactored attempt, the current version is essentially the same approach; the only notable change is deletePost returning undefined explicitly. Overall, it strongly addresses the code duplication issue with minimal added risk."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 3,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 95,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 16596,
+      "completion_tokens": 3797,
+      "total_tokens": 20393,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 9896,
+        "completion_tokens": 844,
+        "total_tokens": 10740
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 6700,
+        "completion_tokens": 2953,
+        "total_tokens": 9653
+      }
+    },
+    "estimated_cost_usd": 0.021348,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.003034,
+      "gpt-5.4-mini": 0.018313
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

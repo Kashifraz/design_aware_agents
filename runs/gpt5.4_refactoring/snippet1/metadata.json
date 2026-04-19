@@ -1,0 +1,95 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T05:55:42.005642+00:00",
+  "run": {
+    "snippet_id": "snippet1",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet1",
+    "snippet_index": 1,
+    "file_name": "snippet1.py",
+    "language": "python",
+    "extension": ".py",
+    "design_issues": "code duplication"
+  },
+  "analysis": {
+    "root_cause": "The PUT and PATCH methods contain near-identical logic for (1) fetching/authorizing the Project, (2) retrieving or creating ChartConfig, (3) instantiating ChartConfigSerializer with similar context, and (4) performing the same is_valid/save/error response flow; only the serializer partial flag and the HTTP semantics differ.",
+    "violated_principle": [
+      "DRY",
+      "SRP"
+    ],
+    "explanation": "Both methods duplicate the same control flow and error handling: they each try to load the Project with the same permission check, return the same 404 response on failure, then attempt to get ChartConfig and fall back to creating a serializer when it doesn’t exist, and finally run the same serializer validation/save and response logic. This duplication increases maintenance cost and risk of inconsistencies (e.g., changing the error message, context, or response behavior would require edits in multiple places). It also weakens SRP because the methods mix multiple responsibilities—authorization, persistence (get-or-create), and HTTP/serialization response handling—repeatedly rather than centralizing shared behavior."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The duplication is confined to the shared update flow in put and patch: project lookup/ownership check, chart config retrieval, serializer construction, validation, save, and response handling. Extracting that common flow into a single helper removes the repeated logic while preserving behavior. The helper keeps the original semantics intact by only applying the partial flag when updating an existing ChartConfig, and by using the same serializer/context, status codes, and error responses as before.",
+    "refactored_code_file": "snippet1_refactored.py"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 95,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactoring extracts the shared logic into a single helper method (_save_chart_config), eliminating duplication across put/patch. Compared to the previous attempt, it is also cleaner (slightly better naming and reduced repeated context construction) while keeping the same control flow, serializer partial behavior, status codes, and error handling. No new risks were introduced."
+  },
+  "attempt": 3,
+  "stop_reason": "success",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 3,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 95,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 8415,
+      "completion_tokens": 1930,
+      "total_tokens": 10345,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 4688,
+        "completion_tokens": 607,
+        "total_tokens": 5295
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 3727,
+        "completion_tokens": 1323,
+        "total_tokens": 5050
+      }
+    },
+    "estimated_cost_usd": 0.030859,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.001696,
+      "gpt-5.4": 0.029163
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

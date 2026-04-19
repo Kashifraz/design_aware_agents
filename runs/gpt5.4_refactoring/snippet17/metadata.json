@@ -1,0 +1,95 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:07:34.075633+00:00",
+  "run": {
+    "snippet_id": "snippet17",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet17",
+    "snippet_index": 17,
+    "file_name": "snippet17.vue",
+    "language": "vue",
+    "extension": ".vue",
+    "design_issues": "code conditional"
+  },
+  "analysis": {
+    "root_cause": "The function mixes multiple conditional guard checks and state transitions (eligibility checks, idempotency checks, processing flag management, and error handling) in a single control-flow block, creating a complex conditional structure that is hard to reason about and maintain.",
+    "violated_principle": [
+      "KISS",
+      "Separation of Concerns"
+    ],
+    "explanation": "processPayment contains several early-return conditions combined with additional state management (processing.value, paymentProcessed.value) and side effects (emit, console.error, alert). This results in a dense conditional flow that couples payment eligibility logic with execution and UI/error behavior. As the number of conditions grows, the branching becomes harder to verify for correctness (e.g., ensuring paymentProcessed/processing flags are always consistent), violating KISS and indicating separation of concerns is not respected (eligibility/guard logic, payment payload construction, and error/UI handling are all intertwined)."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The conditional-related design issue is improved by separating the payment flow into small, single-purpose functions: one for the guard condition, one for payload creation, one for successful completion, and one for failure handling. This keeps the original control flow and side effects intact while reducing the density of conditional/state logic inside processPayment. Behavior is preserved because the same guard condition, emitted payload, success flag updates, error handling, and finally-based processing reset are maintained.",
+    "refactored_code_file": "snippet17_refactored.vue"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 70,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactor further reduces conditional complexity by extracting skip logic and also separates concerns (building payload, marking success, handling errors). This bundles the conditional-related issue reduction (early return via shouldSkipPaymentProcessing) and improves readability/maintainability. Behavior appears preserved: the same guard condition is used, processing.value is set true/false in the same places, the same payload fields are emitted, and paymentProcessed.value is set true on success and false on error. No new conditional/flow risks were introduced."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 3,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 55,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 25,
+        "issue_resolved": false
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 70,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 4954,
+      "completion_tokens": 1580,
+      "total_tokens": 6534,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 2530,
+        "completion_tokens": 741,
+        "total_tokens": 3271
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 2424,
+        "completion_tokens": 839,
+        "total_tokens": 3263
+      }
+    },
+    "estimated_cost_usd": 0.020077,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.001432,
+      "gpt-5.4": 0.018645
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

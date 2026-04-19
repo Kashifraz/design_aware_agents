@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T05:58:48.474744+00:00",
+  "run": {
+    "snippet_id": "snippet7",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet7",
+    "snippet_index": 7,
+    "file_name": "snippet7.py",
+    "language": "python",
+    "extension": ".py",
+    "design_issues": "complex method"
+  },
+  "analysis": {
+    "root_cause": "The validate_style method performs multiple, unrelated validation responsibilities (type checking, per-field constraints, color parsing/regex validation, legend position validation, and boolean field validation) in a single monolithic function.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "validate_style mixes several distinct validation concerns—schema/type validation, string length rules for multiple fields, list/element validation for colors (including importing and compiling a regex and checking named/hex formats), enum validation for legendPosition, and iterative boolean validation—into one long method. This increases cyclomatic complexity and makes the function harder to read, test, and modify. Any change to one validation rule (e.g., adding a new color format or adjusting length limits) requires editing the same large method, which also encourages duplication of similar checks (string type + length) across fields and makes the overall logic less straightforward (violating KISS)."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The original method is a complex, monolithic validator handling several distinct concerns: object type validation, bounded string validation, colors list and item validation, enum validation, and boolean validation. Extracting focused helper methods reduces cyclomatic complexity, improves readability and testability, and keeps behavior unchanged while preserving the overall structure of the original implementation.",
+    "refactored_code_file": "snippet7_refactored.py"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactor applies Extract Method to split the large validate_style into focused helpers (_validate_optional_string, _validate_colors, _validate_legend_position, _validate_boolean_fields), substantially reducing the complexity of the main method. Logic and validation messages/thresholds appear consistent with the original snippet, and the return behavior is unchanged."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 12031,
+      "completion_tokens": 2851,
+      "total_tokens": 14882,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 7053,
+        "completion_tokens": 781,
+        "total_tokens": 7834
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 4978,
+        "completion_tokens": 2070,
+        "total_tokens": 7048
+      }
+    },
+    "estimated_cost_usd": 0.045882,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.002387,
+      "gpt-5.4": 0.043495
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

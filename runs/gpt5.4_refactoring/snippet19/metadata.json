@@ -1,0 +1,101 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:09:09.716745+00:00",
+  "run": {
+    "snippet_id": "snippet19",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet19",
+    "snippet_index": 19,
+    "file_name": "snippet19.java",
+    "language": "java",
+    "extension": ".java",
+    "design_issues": "complex method, large method"
+  },
+  "analysis": {
+    "root_cause": "The method `getProfessorDashboard` is acting as an orchestration layer and also contains all data-access, filtering, sorting, limiting, and DTO-mapping logic for multiple independent dashboard sections (assigned courses, upcoming deadlines, pending grading, today’s classes, recent submissions, and statistics). This results in one monolithic “god method” with repeated query/filter patterns and inline transformations.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "KISS",
+      "DRY"
+    ],
+    "explanation": "The method violates SRP because it has multiple responsibilities: (1) fetching data from several repositories, (2) applying business rules (date windows, statuses, grading presence), (3) performing sorting/limiting, and (4) converting entities to DTOs (including manual field-by-field mapping). It also violates Separation of Concerns by mixing persistence/query logic with transformation and dashboard composition in a single routine. The code is large/complex because it repeats similar patterns multiple times (e.g., repeatedly streaming `submissionRepository.findAll()` with nearly identical filters for professorId and then again for graded/pending/recent counts; repeated `gradeRepository.findBySubmissionId(...).isPresent()` checks inside stream filters; repeated in-method mapping logic). These factors increase cognitive load, make the method hard to test and maintain, and make changes to any one dashboard section risk unintended side effects in the others."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The main issue is a large, complex method that mixes dashboard orchestration with section-specific querying, filtering, sorting, counting, and DTO mapping. Extracting each dashboard section into small private helper methods keeps behavior intact while reducing cognitive load, improving readability, and making the orchestration method easier to understand and maintain. This is a minimal refactoring focused on decomposing the god method without changing its overall flow or responsibilities.",
+    "refactored_code_file": "snippet19_refactored.java"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 78,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "Behavior change risk: pending grading logic now filters from professorSubmissions (all submissions for professor) but still calls gradeRepository.findBySubmissionId per submission; original also did this but also required assessment != null and professor != null inline—now delegated to isProfessorSubmission; should be equivalent but depends on null-handling consistency.",
+      "Performance risk: populateStatistics now uses professorSubmissions.size() for totalSubmissions, whereas original computed totalSubmissions via submissionRepository.findAll().stream().filter(...).count(); if getProfessorSubmissions filters identically, behavior matches; otherwise could differ.",
+      "Potential NPE risk remains in convertCourseToDTO: course.getMajor() is assumed non-null (same as original), but refactoring may make it easier to call convertCourseToDTO in other contexts later."
+    ],
+    "comments": "The refactor extracts multiple responsibilities into helper methods, significantly reducing the original large/complex method by distributing logic across smaller functions. This directly addresses the 'complex method' and 'large method' design issues as a bundle. However, behavior preservation is not fully guaranteed because the refactor changes how intermediate collections are computed (e.g., totalSubmissions and gradedSubmissions now derive from professorSubmissions rather than re-filtering from repository each time). If isProfessorSubmission matches the original inline predicates exactly, behavior should be preserved; otherwise there is some uncertainty."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 70,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 19462,
+      "completion_tokens": 5259,
+      "total_tokens": 24721,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 11548,
+        "completion_tokens": 1319,
+        "total_tokens": 12867
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 7914,
+        "completion_tokens": 3940,
+        "total_tokens": 11854
+      }
+    },
+    "estimated_cost_usd": 0.082843,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.003958,
+      "gpt-5.4": 0.078885
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:07:48.950830+00:00",
+  "run": {
+    "snippet_id": "snippet14",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet14",
+    "snippet_index": 14,
+    "file_name": "snippet14.js",
+    "language": "javascript",
+    "extension": ".js",
+    "design_issues": "complex method, complex conditional"
+  },
+  "analysis": {
+    "root_cause": "The route handler mixes multiple responsibilities (parameter validation, data fetching, block resolution logic, response aggregation, and statistics computation) and contains branching logic that handles several blockId formats and answer matching cases within a single method.",
+    "violated_principle": [
+      "SRP",
+      "KISS",
+      "Separation of Concerns"
+    ],
+    "explanation": "This endpoint performs end-to-end work in one large function: it validates postId/blockId, loads the post, resolves the target quiz/poll block using a complex conditional (numeric blockId treated as array index vs. non-numeric blockId searched by type), queries responses, then computes option counts and percentages with additional nested conditionals (normalizing answers to an array and matching answers to optionStats via multiple equality checks and string coercions). The branching and nested loops make the method hard to read, test, and maintain, and changes to validation rules, block lookup strategy, or statistics logic would require editing the same monolithic handler."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The endpoint is refactored by extracting validation, block resolution, option-stat initialization, response counting, and percentage calculation into small helpers. This keeps the route handler behaviorally aligned with the original while reducing method size and isolating the complex conditional logic for easier reading and maintenance.",
+    "refactored_code_file": "snippet14_refactored.js"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 70,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactor further reduces method complexity by extracting additional steps (counting responses and calculating percentages) into separate functions, improving readability and maintainability. It also keeps the same validation, block resolution logic, response counting logic, and percentage rounding behavior as the previous attempt and the original snippet. No new conditional complexity is introduced beyond what already existed (e.g., matching logic in findIndex). Behavior appears preserved."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 2,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 70,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 70,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 12891,
+      "completion_tokens": 3333,
+      "total_tokens": 16224,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 7615,
+        "completion_tokens": 890,
+        "total_tokens": 8505
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 5276,
+        "completion_tokens": 2443,
+        "total_tokens": 7719
+      }
+    },
+    "estimated_cost_usd": 0.017586,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.002635,
+      "gpt-5.4-mini": 0.014951
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

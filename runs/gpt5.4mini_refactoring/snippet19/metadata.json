@@ -1,0 +1,100 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:10:23.684018+00:00",
+  "run": {
+    "snippet_id": "snippet19",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet19",
+    "snippet_index": 19,
+    "file_name": "snippet19.java",
+    "language": "java",
+    "extension": ".java",
+    "design_issues": "complex method, large method"
+  },
+  "analysis": {
+    "root_cause": "The method `getProfessorDashboard` is acting as an orchestration layer for multiple independent dashboard concerns (assigned courses mapping, upcoming deadlines filtering/sorting, pending grading computation, today’s timetable filtering, recent submissions, and multiple statistics). It also embeds entity-to-DTO mapping logic and data-access queries directly inside one large method, causing high cyclomatic/structural complexity and a “god method” that mixes responsibilities.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "The code violates SRP because it performs several distinct tasks in sequence: (1) fetch and map assigned courses to DTOs, (2) compute upcoming deadlines with time-window logic and sorting/limiting, (3) compute pending grading tasks by scanning submissions and checking grade existence, (4) compute today’s classes by filtering timetable entries by day-of-week, (5) compute recent submissions by sorting/limiting, and (6) compute multiple aggregate statistics. It also violates separation of concerns by combining data retrieval (multiple repository calls and `findAll()` scans), business rules (deadline window, status checks, grading eligibility), and presentation mapping (manual field-by-field DTO construction) in one method. This leads to a large, hard-to-read and hard-to-test method because changes to any dashboard section (e.g., deadline rules, grading criteria, DTO fields) require editing the same method, increasing coupling and cognitive load."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The method is a classic god method that mixes multiple dashboard concerns, data access, filtering, sorting, and DTO mapping. Extracting each concern into a dedicated helper method reduces complexity, improves readability, and preserves behavior while keeping the refactoring minimal and focused.",
+    "refactored_code_file": "snippet19_refactored.java"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 78,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "Behavior change risk: original code computed pending grading tasks by iterating over submissionRepository.findAll().stream() and filtering with !gradeRepository.findBySubmissionId(s.getId()).isPresent(); the refactor preserves this logic, but it now filters after pre-filtering by professorId, which is equivalent only if the professorId filtering is identical to the original (it is, but any subtle differences in null handling could matter).",
+      "Performance risk: original code repeatedly called submissionRepository.findAll().stream() for pending, recent, and statistics; the refactor calls submissionRepository.findAll() once and reuses the list, which is likely better, but it changes the number of repository calls (could affect transactional consistency if data changes between calls).",
+      "Potential NPE risk remains in mapCoursesToDTOs: dto.setMajorId(course.getMajor().getId()) assumes course.getMajor() is non-null; this was also present in the original, but extracting method can make it easier to overlook."
+    ],
+    "comments": "The refactor substantially reduces the 'large method' and 'complex method' issues by extracting multiple cohesive helper methods (course mapping, upcoming deadlines, submission filtering, today’s classes, recent submissions, graded count). It also improves readability and reduces duplicated filtering logic. However, behavior preservation is marked 'uncertain' because the refactor changes repository call timing/number (e.g., fewer repeated submissionRepository.findAll() calls), which can matter if underlying data changes between those calls in a non-transactional context."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 70,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 19062,
+      "completion_tokens": 5084,
+      "total_tokens": 24146,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 11327,
+        "completion_tokens": 1259,
+        "total_tokens": 12586
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 7735,
+        "completion_tokens": 3825,
+        "total_tokens": 11560
+      }
+    },
+    "estimated_cost_usd": 0.026853,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.003839,
+      "gpt-5.4-mini": 0.023014
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

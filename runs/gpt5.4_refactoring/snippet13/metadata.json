@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:03:31.068641+00:00",
+  "run": {
+    "snippet_id": "snippet13",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet13",
+    "snippet_index": 13,
+    "file_name": "snippet13.js",
+    "language": "javascript",
+    "extension": ".js",
+    "design_issues": "complex method, complex conditional"
+  },
+  "analysis": {
+    "root_cause": "The function checkSpamPatterns mixes multiple independent spam-detection heuristics (link counting, keyword scanning across multiple fields, and capitalization analysis) into one large method with several early-return conditionals.",
+    "violated_principle": [
+      "SRP",
+      "KISS",
+      "Separation of Concerns"
+    ],
+    "explanation": "checkSpamPatterns performs three distinct checks, each with its own data preparation and conditional logic: (1) counts URLs and returns on linkCount > 2, (2) iterates over a keyword list and checks content, author name, and author email, returning on the first match, and (3) computes an uppercase ratio and applies a threshold. These responsibilities are tightly coupled in a single method, creating a complex control flow with multiple branches and early exits. As the number of heuristics grows, the method will become harder to read, test, and extend, violating SRP/KISS and blurring separation between different detection strategies."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The original function combines multiple independent spam-detection heuristics in one method, creating a complex method with several conditionals and early returns. Extracting each heuristic into a small helper function improves readability, testability, and separation of concerns while preserving the original control flow and behavior.",
+    "refactored_code_file": "snippet13_refactored.js"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 75,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "Extracted helper functions reduce the complexity of the main method and make each conditional check more focused, addressing both 'complex method' and 'complex conditional' concerns as a bundle. Logic and thresholds appear unchanged (same link regex/count, same keyword list and matching, same capitalization ratio/length guard, same return reasons). No new edge-case handling differences introduced."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "yes",
+        "improvement_score": 75,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 65,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 75,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 7238,
+      "completion_tokens": 1927,
+      "total_tokens": 9165,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 4091,
+        "completion_tokens": 583,
+        "total_tokens": 4674
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 3147,
+        "completion_tokens": 1344,
+        "total_tokens": 4491
+      }
+    },
+    "estimated_cost_usd": 0.029574,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.001547,
+      "gpt-5.4": 0.028028
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

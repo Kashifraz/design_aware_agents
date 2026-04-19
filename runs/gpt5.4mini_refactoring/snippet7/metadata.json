@@ -1,0 +1,100 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:04:54.878946+00:00",
+  "run": {
+    "snippet_id": "snippet7",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet7",
+    "snippet_index": 7,
+    "file_name": "snippet7.py",
+    "language": "python",
+    "extension": ".py",
+    "design_issues": "complex method"
+  },
+  "analysis": {
+    "root_cause": "The validate_style method performs many unrelated validation responsibilities (type checking, per-field constraints, regex-based color validation, enumeration validation, and boolean field validation) in a single, monolithic function.",
+    "violated_principle": [
+      "SRP",
+      "KISS",
+      "Separation of Concerns",
+      "DRY"
+    ],
+    "explanation": "The method mixes multiple validation concerns—schema/type validation, string length rules for several fields, list/element validation for colors (including importing and compiling a regex), enum validation for legendPosition, and iteration-based boolean validation—into one long procedure. This creates a complex method because the logic is tightly coupled and grows with each new style attribute. It also violates DRY by repeating similar patterns for string fields (existence check, non-None check, type check, length check) rather than using shared helper routines or a declarative validation map. The result is harder to read, test, and extend: adding or changing a single field’s rules requires editing the same large method, increasing the risk of regressions and making the function less maintainable."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method (with small helper functions)",
+    "reasoning": "The original validator is a monolithic method that mixes several validation concerns. Extracting repeated checks into focused helper methods reduces complexity, improves readability, and keeps behavior the same while making each rule easier to test and maintain.",
+    "refactored_code_file": "snippet7_refactored.py"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "Behavior may differ in edge cases due to helper functions not explicitly returning/transforming values (though they currently only validate).",
+      "The refactor introduces additional methods on the class; if these names conflict with existing methods or are not included in the class scope, it could break execution."
+    ],
+    "comments": "The refactor reduces the complexity of validate_style by extracting repeated validation logic into focused helper methods, directly addressing the 'complex method' design issue. The validations and error messages appear largely equivalent, but exact behavior preservation is marked uncertain because the snippet assumes these helper methods are correctly placed on the same class and that no subtle differences exist in formatting/exception text beyond what is shown."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 75,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 12052,
+      "completion_tokens": 2867,
+      "total_tokens": 14919,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 6944,
+        "completion_tokens": 894,
+        "total_tokens": 7838
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 5108,
+        "completion_tokens": 1973,
+        "total_tokens": 7081
+      }
+    },
+    "estimated_cost_usd": 0.015216,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.002506,
+      "gpt-5.4-mini": 0.01271
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

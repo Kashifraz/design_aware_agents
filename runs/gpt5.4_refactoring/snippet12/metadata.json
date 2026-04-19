@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:03:01.043161+00:00",
+  "run": {
+    "snippet_id": "snippet12",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet12",
+    "snippet_index": 12,
+    "file_name": "snippet12.php",
+    "language": "php",
+    "extension": ".php",
+    "design_issues": "complex method, large method"
+  },
+  "analysis": {
+    "root_cause": "The method generate_form_html() mixes multiple responsibilities—data extraction/validation, template retrieval, style/customization building, captcha generation, and full HTML string assembly—into one large rendering routine.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "generate_form_html() performs end-to-end form construction: it derives titles/descriptions from $atts, parses $form->form_data to collect fields, fetches template configuration from the database, computes inline styles (including button styles), generates captcha data, and then concatenates a complete HTML document (including nonce fields, hidden inputs, captcha UI, field rendering, and submit/messages markup). This creates a large, branching method with many unrelated steps and dependencies (database access, captcha logic, HTML templating, and customization rules). The result is a complex and large method that is harder to read, test, and modify because changes to any concern (e.g., captcha UI, styling rules, template lookup, or field rendering) require editing the same routine."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The original method is a large, complex routine that combines several responsibilities: resolving display data, extracting fields, loading template/customization data, building inline styles, and assembling multiple HTML sections. Applying Extract Method keeps behavior intact while reducing method size and improving readability by isolating cohesive sub-steps such as field extraction, style generation, and rendering of specific form sections.",
+    "refactored_code_file": "snippet12_refactored.php"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 78,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactor applies Extract Method and meaningfully reduces the complexity/size of generate_form_html by moving field extraction, style building, and HTML sub-sections into helpers. Logic and output structure appear equivalent to the original (same data sources, same escaping/kses usage, same captcha/nonce/hidden inputs, same field rendering loop, same template class/custom styles/button style behavior). No new functional branches were introduced, and helper methods mirror the original code paths."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "yes",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 75,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 18915,
+      "completion_tokens": 5021,
+      "total_tokens": 23936,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 11503,
+        "completion_tokens": 985,
+        "total_tokens": 12488
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 7412,
+        "completion_tokens": 4036,
+        "total_tokens": 11448
+      }
+    },
+    "estimated_cost_usd": 0.082602,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.003532,
+      "gpt-5.4": 0.07907
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

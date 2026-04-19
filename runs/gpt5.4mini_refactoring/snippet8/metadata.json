@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:05:18.296504+00:00",
+  "run": {
+    "snippet_id": "snippet8",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet8",
+    "snippet_index": 8,
+    "file_name": "snippet8.php",
+    "language": "php",
+    "extension": ".php",
+    "design_issues": "complex method"
+  },
+  "analysis": {
+    "root_cause": "The method handle_form_submission() performs multiple unrelated responsibilities—request parsing, security checks, business validation (captcha/required/email), dynamic field extraction, error aggregation, and persistence—within a single large controller-like function.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "handle_form_submission() mixes concerns that should be handled in distinct layers/components: it reads and normalizes $_POST inputs, constructs and verifies a nonce, fetches the form configuration from the database, validates captcha logic, dynamically iterates over configured fields and applies per-field rules (required/email), builds user-facing error messages, and finally saves the submission and returns JSON responses. This results in a long, branching, tightly coupled flow that is hard to test, extend (e.g., adding new field types/validators), or reuse. Any change to validation rules, security behavior, or persistence logic forces modifications to the same complex method, increasing the risk of regressions and reducing maintainability."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "This refactoring keeps the same control flow and responses while splitting the large submission handler into small, single-purpose helpers for request parsing, nonce verification, captcha validation, field extraction, and submission data validation/building. The helpers preserve the original assumptions and behavior more closely by avoiding extra defensive changes that could alter notices or default handling.",
+    "refactored_code_file": "snippet8_refactored.php"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 70,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactor extracts multiple responsibilities from the complex handle_form_submission() method into smaller private methods (get_post_form_id, verify_form_nonce, validate_captcha, get_form_fields, validate_and_build_submission_data). This reduces the complexity of the main method as a bundle. Compared to the previous refactored attempt, the current snippet is effectively the same structure and logic; validate_captcha differs only by using isset defaults vs direct intval (previously handled missing keys as 0), but intval on an undefined index in PHP typically yields 0 with a notice—behavior is effectively the same aside from potential notices. No new functional logic changes are apparent."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 2,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 70,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 12989,
+      "completion_tokens": 3444,
+      "total_tokens": 16433,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 7704,
+        "completion_tokens": 873,
+        "total_tokens": 8577
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 5285,
+        "completion_tokens": 2571,
+        "total_tokens": 7856
+      }
+    },
+    "estimated_cost_usd": 0.018165,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.002632,
+      "gpt-5.4-mini": 0.015533
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

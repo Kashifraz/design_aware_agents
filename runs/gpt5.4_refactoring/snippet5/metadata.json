@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T05:57:48.957177+00:00",
+  "run": {
+    "snippet_id": "snippet5",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet5",
+    "snippet_index": 5,
+    "file_name": "snippet5.java",
+    "language": "java",
+    "extension": ".java",
+    "design_issues": "complex method"
+  },
+  "analysis": {
+    "root_cause": "The method exportOrdersToCSV mixes multiple responsibilities—input parsing/validation, domain enum/date conversion, data retrieval, and CSV formatting/serialization—into a single large procedure.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "exportOrdersToCSV performs several distinct tasks: (1) converts raw String filters into OrderStatus and PaymentStatus enums via try/catch, (2) parses start/end date Strings into LocalDateTime with custom time suffixes, (3) queries the repository using the derived filter objects, and (4) builds the CSV output by iterating orders and appending multiple fields. This results in a complex, hard-to-read method with nested conditional logic and exception handling that obscures the main intent (exporting orders). The parsing/formatting logic is also tightly coupled to the export format, making the method harder to test, maintain, and extend (e.g., changing date formats, adding new filters, or modifying CSV columns would all require editing the same method)."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The original method is a complex method that combines filter parsing, date conversion, repository access, and CSV serialization in one place. Extracting these responsibilities into small helper methods improves readability and separation of concerns while preserving the existing behavior, including ignoring invalid enum/date inputs.",
+    "refactored_code_file": "snippet5_refactored.java"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactor extracts parsing and CSV-building responsibilities into smaller methods, significantly reducing the complexity of exportOrdersToCSV and improving readability/maintainability. Behavior is preserved: invalid/empty inputs still result in null filters, date parsing still appends T00:00:00/T23:59:59, and CSV output structure/row generation remains the same. No new functional risks were introduced (same exception swallowing semantics and same header/row formatting)."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 9959,
+      "completion_tokens": 2683,
+      "total_tokens": 12642,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 5822,
+        "completion_tokens": 656,
+        "total_tokens": 6478
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 4137,
+        "completion_tokens": 2027,
+        "total_tokens": 6164
+      }
+    },
+    "estimated_cost_usd": 0.042732,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.001984,
+      "gpt-5.4": 0.040747
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

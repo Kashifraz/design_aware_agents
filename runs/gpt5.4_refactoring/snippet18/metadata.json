@@ -1,0 +1,97 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:08:11.857787+00:00",
+  "run": {
+    "snippet_id": "snippet18",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet18",
+    "snippet_index": 18,
+    "file_name": "snippet18.ts",
+    "language": "typescript",
+    "extension": ".ts",
+    "design_issues": "code duplication"
+  },
+  "analysis": {
+    "root_cause": "Repeated boilerplate logic for async operations (setting loading/error, try/catch/finally, and similar inventory state update patterns) is duplicated across multiple functions (fetchInventoryItem, createInventory, updateInventory, adjustInventory, fetchLowStock).",
+    "violated_principle": [
+      "DRY",
+      "SRP",
+      "KISS",
+      "Separation of Concerns"
+    ],
+    "explanation": "Each function manually repeats the same control-flow structure: `loading.value = true`, `error.value = null`, a `try` block calling the service, a `catch` that maps `err.response?.data?.message` to a default message, and a `finally` that sets `loading.value = false`. Additionally, `fetchInventoryItem`, `updateInventory`, and `adjustInventory` share the same inventory array reconciliation logic (`findIndex` by id, replace or push) and the same `currentInventory` synchronization. This duplication increases maintenance cost and inconsistency risk (e.g., different default error messages or state update behavior can drift), and it mixes concerns by embedding both API orchestration and state mutation logic directly inside each function instead of centralizing shared behavior."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "This refactor removes duplicated async loading/error handling by extracting a small wrapper function, and removes duplicated inventory replacement/current item sync logic by extracting narrowly scoped helpers. To preserve behavior, the helpers use the returned item's own id for inventory array matching in fetch-and-upsert flows, and the requested id for update/sync flows exactly as in the original code. The refactor is minimal, focused on duplication, and keeps each function's original state update semantics and error messages unchanged.",
+    "refactored_code_file": "snippet18_refactored.ts"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 78,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactor further reduces duplication by reusing withLoadingAndError across all async operations and consolidating inventory array update logic into helper functions. Compared to the previous attempt, it slightly improves consistency by using replaceInventoryItemIfExists for update/adjust and upsertInventoryItemByItemId for fetchInventoryItem, but it does not materially change behavior. No new logic paths were introduced that would alter results."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 3,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 70,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 78,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 11640,
+      "completion_tokens": 2963,
+      "total_tokens": 14603,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 6604,
+        "completion_tokens": 900,
+        "total_tokens": 7504
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 5036,
+        "completion_tokens": 2063,
+        "total_tokens": 7099
+      }
+    },
+    "estimated_cost_usd": 0.045981,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.002446,
+      "gpt-5.4": 0.043535
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

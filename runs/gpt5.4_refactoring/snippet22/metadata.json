@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:11:41.578614+00:00",
+  "run": {
+    "snippet_id": "snippet22",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet22",
+    "snippet_index": 22,
+    "file_name": "snippet22.java",
+    "language": "java",
+    "extension": ".java",
+    "design_issues": "complex method, complex conditional"
+  },
+  "analysis": {
+    "root_cause": "The method mixes multiple responsibilities—parsing/normalizing inputs and applying a growing set of content-type/filename matching rules—into a single chain of nested conditionals, making the decision logic hard to read and extend.",
+    "violated_principle": [
+      "KISS",
+      "SRP",
+      "Separation of Concerns"
+    ],
+    "explanation": "The logic for determining file type is implemented as a long if/else-if chain with many string containment checks and filename suffix checks (including repeated null checks and toLowerCase calls). As new formats are added, this method will keep growing, increasing cyclomatic complexity and making it difficult to verify correctness or modify rules without risking regressions. The method also conflates input handling (null/normalization) with rule evaluation, so the decision policy is not isolated from preprocessing, violating SRP and separation of concerns."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "This refactoring keeps the original decision order and exact matching expressions while reducing the complexity of the main method. The conditional branches are split into small, intention-revealing helper methods, but the original null checks, toLowerCase calls, and contains/endsWith logic are preserved inside those helpers to minimize behavior risk.",
+    "refactored_code_file": "snippet22_refactored.java"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 75,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactoring extracts conditional logic into helper methods, reducing both the complex method and complex conditional in the main determineFileType method. Compared to the previous attempt, the current version is essentially equivalent in structure and readability; it keeps the same decision order and null-handling for filename. No new behavioral changes are apparent."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 3,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 70,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 75,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 6262,
+      "completion_tokens": 1991,
+      "total_tokens": 8253,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 3356,
+        "completion_tokens": 801,
+        "total_tokens": 4157
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 2906,
+        "completion_tokens": 1190,
+        "total_tokens": 4096
+      }
+    },
+    "estimated_cost_usd": 0.026787,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.001672,
+      "gpt-5.4": 0.025115
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

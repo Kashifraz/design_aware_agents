@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:10:52.271116+00:00",
+  "run": {
+    "snippet_id": "snippet20",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet20",
+    "snippet_index": 20,
+    "file_name": "snippet20.java",
+    "language": "java",
+    "extension": ".java",
+    "design_issues": "complex method, large method"
+  },
+  "analysis": {
+    "root_cause": "The method generateResultsheet() combines multiple responsibilities—data retrieval (course/student/enrollments/assessments/grades), business validation (enrollment status), grade computation (per-assessment percentage/weighted scores), and orchestration of course-grade calculation/persistence—into a single large procedural flow.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "generateResultsheet() is complex and effectively “does everything”: it loads entities from several repositories, performs enrollment checks, iterates over assessments to build DTOs while computing derived metrics (percentage, weighted score), tracks grading counts/weights, and also conditionally triggers course-grade calculation via gradeService and then re-reads the persisted CourseGrade. This results in a long, nested, stateful method with mixed concerns (I/O, validation, calculation, DTO mapping, and orchestration). The lack of decomposition into smaller focused methods (e.g., validateEnrollment, buildAssessmentGrades, computeWeightedScores, resolveOrCalculateCourseGrade, mapToResultsheetDTO) makes the method harder to read, test, and maintain, directly causing the “complex method” and “large method” design issues."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "This refactoring keeps the original control flow and behavior while reducing the size and complexity of generateResultsheet(). The assessment-grade construction is extracted into a dedicated helper, and course-grade resolution is kept in a focused helper that preserves the original 'only calculate when no existing course grade and grades are present' behavior. This improves readability, testability, and separation of concerns without changing the method’s observable logic.",
+    "refactored_code_file": "snippet20_refactored.java"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 75,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactoring further reduces method complexity/size by extracting assessment-grade construction into buildAssessmentGrades and splitting grade vs empty-grade logic into applyGradeDetails/applyEmptyGradeDetails, plus encapsulating multiple return values in AssessmentGradeBuildResult. Compared to the previous attempt, it is slightly cleaner and more modular, with no apparent logic changes. Behavior appears preserved (same calculations, same enrollment validation, same course-grade resolution, same DTO field population). No new risks are evident."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 3,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 55,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 75,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 17618,
+      "completion_tokens": 4593,
+      "total_tokens": 22211,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 10563,
+        "completion_tokens": 950,
+        "total_tokens": 11513
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 7055,
+        "completion_tokens": 3643,
+        "total_tokens": 10698
+      }
+    },
+    "estimated_cost_usd": 0.024985,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.0033,
+      "gpt-5.4-mini": 0.021685
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

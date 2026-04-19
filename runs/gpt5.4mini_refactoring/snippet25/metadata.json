@@ -1,0 +1,101 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:13:16.281142+00:00",
+  "run": {
+    "snippet_id": "snippet25",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet25",
+    "snippet_index": 25,
+    "file_name": "snippet25.js",
+    "language": "javascript",
+    "extension": ".js",
+    "design_issues": "complex method, large method, complex conditional"
+  },
+  "analysis": {
+    "root_cause": "The `validateBlock` function is a single, monolithic validator that mixes generic validation, type dispatch, and extensive per-block validation logic for many block types inside one method using a large `switch` statement and many nested/compound conditionals.",
+    "violated_principle": [
+      "SRP",
+      "KISS",
+      "Separation of Concerns",
+      "DRY"
+    ],
+    "explanation": "All responsibilities for validating every supported block type are centralized in one function. The method grows large because each block type (`paragraph`, `heading`, `image`, `code`, `authorBox`, `tableOfContents`, `quiz`, `poll`, `carousel`, etc.) adds its own validation rules directly into the same `switch`. This creates complex conditional logic (multiple early returns, nested checks, loops, and compound boolean expressions) and makes the control flow hard to follow and extend. It also violates DRY because similar URL/path validation patterns (e.g., `http(s)://`, `/uploads/`, `/`) and repeated “string non-empty” checks are implemented multiple times rather than extracted into reusable helpers. As a result, the function becomes both large and complex, directly matching the hotspot design issues: complex method, large method, and complex conditional."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method with small validation helpers",
+    "reasoning": "This refactor keeps the same validation rules but moves repeated checks into focused helper functions, reducing the size and complexity of validateBlock and its nested conditionals. It also preserves the original URL/path and optional-field behavior more closely by matching the prior try/catch-based validation style for string methods and keeping empty optional links allowed.",
+    "refactored_code_file": "snippet25_refactored.js"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 78,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "validateImageBlock: extra closing brace `}` after the isValidUrlOrPath check suggests a syntax error or unintended code structure.",
+      "isValidUrlOrPath/isValidCarouselLink now wrap logic in try/catch; behavior should be equivalent, but the try/catch is unnecessary and could mask unexpected issues.",
+      "isNonEmptyString is defined but unused (minor)."
+    ],
+    "comments": "The refactor clearly reduces the original large/complex method by extracting helpers for URL/path validation, carousel item validation, quiz/poll option validation, TOC item validation, image/authorBox/quizOrPoll/carousel block validation—addressing complex method/large method/complex conditional as a bundle. However, the current snippet appears to have a structural/syntax problem in validateImageBlock (an extra `}`), so behavior preservation cannot be confirmed. Aside from that, the logic is largely equivalent to the previous refactored attempt and the original intent."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 3,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 72,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 65,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 46534,
+      "completion_tokens": 10170,
+      "total_tokens": 56704,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 29013,
+        "completion_tokens": 1046,
+        "total_tokens": 30059
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 17521,
+        "completion_tokens": 9124,
+        "total_tokens": 26645
+      }
+    },
+    "estimated_cost_usd": 0.061309,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.00711,
+      "gpt-5.4-mini": 0.054199
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

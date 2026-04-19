@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:04:15.758323+00:00",
+  "run": {
+    "snippet_id": "snippet5",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet5",
+    "snippet_index": 5,
+    "file_name": "snippet5.java",
+    "language": "java",
+    "extension": ".java",
+    "design_issues": "complex method"
+  },
+  "analysis": {
+    "root_cause": "The method combines multiple responsibilities—input validation/parsing, domain enum/date conversion, data retrieval, and CSV formatting/serialization—into a single large procedure.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "exportOrdersToCSV performs several distinct tasks: (1) converts raw String filters into OrderStatus and PaymentStatus enums with try/catch swallowing errors, (2) parses start/end date Strings into LocalDateTime by appending time components and suppressing parsing failures, (3) calls the repository to fetch orders using the derived filter objects, and (4) builds the CSV output by iterating orders and appending multiple fields. This makes the method complex and harder to understand, test, and maintain because changes to parsing rules, error handling, query criteria, or CSV formatting all require modifying the same method. Additionally, the silent catch blocks obscure failure causes and increase cognitive load, further violating KISS and SRP."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The refactor splits the original large exportOrdersToCSV method into focused helper methods for parsing filters and appending CSV rows. This reduces cyclomatic and cognitive complexity while preserving the original behavior: invalid or empty inputs are still ignored, date boundaries are parsed the same way, repository access is unchanged, and CSV formatting/order remains identical.",
+    "refactored_code_file": "snippet5_refactored.java"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactoring applies Extract Method to split parsing and CSV row appending into smaller helpers, significantly reducing the complexity of the main exportOrdersToCSV method. The current snippet matches the previous refactored attempt in structure and logic, so it is not a regression. Behavior is preserved: parsing still returns null on invalid/empty inputs, date parsing still appends T00:00:00/T23:59:59, and CSV formatting/row content remains the same."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 2,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "yes",
+        "improvement_score": 75,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 9824,
+      "completion_tokens": 2536,
+      "total_tokens": 12360,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 5766,
+        "completion_tokens": 620,
+        "total_tokens": 6386
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 4058,
+        "completion_tokens": 1916,
+        "total_tokens": 5974
+      }
+    },
+    "estimated_cost_usd": 0.013594,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.001928,
+      "gpt-5.4-mini": 0.011665
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

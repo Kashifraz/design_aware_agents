@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:04:15.678194+00:00",
+  "run": {
+    "snippet_id": "snippet14",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet14",
+    "snippet_index": 14,
+    "file_name": "snippet14.js",
+    "language": "javascript",
+    "extension": ".js",
+    "design_issues": "complex method, complex conditional"
+  },
+  "analysis": {
+    "root_cause": "The route handler mixes multiple responsibilities (parameter validation, data fetching, block selection logic, response aggregation, and statistics computation) and embeds branching logic to handle different blockId formats and answer matching rules, resulting in a single large, highly conditional method.",
+    "violated_principle": [
+      "SRP",
+      "KISS",
+      "Separation of Concerns"
+    ],
+    "explanation": "This endpoint performs end-to-end work inside one function: it validates postId/blockId, loads the post, selects the correct quiz/poll block using a conditional that treats blockId as either an array index or a type-based search, queries responses, normalizes answers, maps answers to option statistics using a multi-condition findIndex comparison (value/index/string coercions), and finally computes percentages. The combination of these steps creates a complex method with nested/branching conditionals (e.g., blockId numeric vs non-numeric, block type checks, and multiple equality checks for answer-to-option matching). Because all of this logic is centralized in the route handler, it becomes harder to read, test, and maintain, and changes to validation, block lookup strategy, or statistics rules would require editing the same large method."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The refactor keeps behavior aligned with the original implementation by extracting only cohesive pieces of logic without changing the underlying control flow or comparison expressions. Validation, block lookup, option initialization, response counting, and percentage calculation are moved into small helpers, while preserving the original numeric blockId handling, non-numeric fallback behavior, parseInt usage, and answer-matching conditions exactly. This reduces method and conditional complexity in the route handler while minimizing behavioral risk.",
+    "refactored_code_file": "snippet14_refactored.js"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 75,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactoring further reduces the complex method and complex conditional by extracting validation, block lookup, statistics building, counting, and percentage application into helpers. Compared to the previous refactor, the current version is largely equivalent in structure and logic; it slightly simplifies naming and keeps the same conditional logic for option matching and block type checks. No new behavioral changes are evident, and the extracted helpers keep the route handler concise. Minor risk: the block lookup helper still uses a numeric blockId path that selects the first quiz/poll block when blockId is non-numeric, matching prior behavior."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 2,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 75,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 13430,
+      "completion_tokens": 3629,
+      "total_tokens": 17059,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 7931,
+        "completion_tokens": 907,
+        "total_tokens": 8838
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 5499,
+        "completion_tokens": 2722,
+        "total_tokens": 8221
+      }
+    },
+    "estimated_cost_usd": 0.057297,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.00272,
+      "gpt-5.4": 0.054577
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

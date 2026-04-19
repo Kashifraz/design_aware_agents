@@ -1,0 +1,102 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:05:57.882653+00:00",
+  "run": {
+    "snippet_id": "snippet15",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet15",
+    "snippet_index": 15,
+    "file_name": "snippet15.php",
+    "language": "php",
+    "extension": ".php",
+    "design_issues": "complex method, large method, complex conditional"
+  },
+  "analysis": {
+    "root_cause": "The method getApplicable() combines multiple responsibilities—authentication/validation, transaction item analysis, product/category/store discount querying, date/min-purchase filtering, extensive debug/diagnostic queries, and result de-duplication/sorting—into one large control flow with deeply nested conditionals.",
+    "violated_principle": [
+      "SRP",
+      "Separation of Concerns",
+      "DRY",
+      "KISS"
+    ],
+    "explanation": "The code is structured as one long method with nested if blocks (e.g., transaction_id branch, productIds/categoryIds branches) and repeated query-building logic for product, category, and store-wide discounts. It also embeds diagnostic logging and additional “check” queries inside the main execution path, further increasing complexity. This violates SRP because the method is responsible for both business decision-making (which discounts apply) and low-level data access/query construction and debugging. It violates DRY because similar date-range and min_purchase filtering patterns and null checks are duplicated across multiple query builders. It violates KISS because the reader must mentally track many intertwined conditions (authentication, required parameters, transaction-derived IDs, multiple discount scopes, validity windows, minimum purchase, deduplication, and priority sorting) to understand the final behavior."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The original getApplicable() method is doing too many things at once: request/auth validation, transaction item extraction, discount query construction for multiple scopes, diagnostic logging, deduplication, and sorting. A minimal refactor using Extract Method reduces the large method and simplifies complex conditional flow without changing behavior. Repeated query concerns such as date/min-purchase filters, transaction product/category extraction, deduplication, and sorting are moved into focused helper methods, improving readability and maintainability while preserving the existing logic and debug behavior.",
+    "refactored_code_file": "snippet15_refactored.php"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 78,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "Behavior change risk: original code only queried product discounts when transactionId was provided, but it also computed categoryIds from product categories and used them only for logging/diagnostics; the refactor passes categoryIds into getProductDiscounts but does not use them in the product discount query (may be fine, but could indicate intended logic was altered).",
+      "Behavior change risk: original code only attempted category discounts when categoryIds was non-empty; refactor does the same, but extractTransactionProductAndCategoryIds returns categoryIds only when product has a category_id; if original transaction items included categoryIds differently (not shown), could differ.",
+      "Potential runtime error risk: sortDiscountsByPriority expects discounts have 'id' keys; if any discount rows lack id, original code would also fail, but the refactor centralizes this and could change failure timing.",
+      "Potential SQL/logic mismatch risk: applyValidityFilters/applyMinPurchaseFilter use the same grouping approach, but any subtle differences in builder state/grouping could affect generated SQL compared to the original inline code."
+    ],
+    "comments": "The refactor substantially reduces the original method’s complexity by extracting transaction parsing, product/category/store discount retrieval, and shared filter logic into smaller methods. This directly addresses the 'complex method' and 'large method' issues, and reduces 'complex conditional' nesting in getApplicable. However, behavior preservation is not fully certain because the refactor changes the structure of how diagnostics and categoryIds are handled (categoryIds are now computed and passed into getProductDiscounts, though not used there), and correctness depends on the exact SQL grouping produced by the extracted filter helpers matching the original inline query logic."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 78,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 42201,
+      "completion_tokens": 10141,
+      "total_tokens": 52342,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 26255,
+        "completion_tokens": 1405,
+        "total_tokens": 27660
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 15946,
+        "completion_tokens": 8736,
+        "total_tokens": 24682
+      }
+    },
+    "estimated_cost_usd": 0.177912,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.007007,
+      "gpt-5.4": 0.170905
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

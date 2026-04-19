@@ -1,0 +1,97 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:03:21.971943+00:00",
+  "run": {
+    "snippet_id": "snippet2",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet2",
+    "snippet_index": 2,
+    "file_name": "snippet2.php",
+    "language": "php",
+    "extension": ".php",
+    "design_issues": "code duplication"
+  },
+  "analysis": {
+    "root_cause": "Repeated boilerplate logic across multiple AJAX handlers (nonce verification, capability checks, input extraction, special-casing form_id=0, and instantiation of Form_Plugin_Form_Builder) is duplicated in ajax_add_field, ajax_update_field, and ajax_remove_field.",
+    "violated_principle": [
+      "DRY",
+      "SRP",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "Each handler performs the same sequence of steps: verify the same nonce, check the same capability (manage_options), parse common POST parameters, handle the same form_id===0 early-return behavior, and create a new Form_Plugin_Form_Builder instance before delegating to a single operation (add/update/remove). This duplication increases maintenance cost and risk of inconsistency (e.g., changing nonce/capability logic or the form_id=0 behavior would require edits in three places). The handlers also mix cross-cutting concerns (security/authorization and request validation) with the specific business action, indicating poor separation of concerns and violating DRY/SRP."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "This refactor removes duplicated AJAX-handler boilerplate by extracting the shared nonce check, capability check, form_id=0 early return, form builder instantiation, and JSON response dispatch into a single helper. The public handlers keep their original parameter extraction and call the helper with the specific action and success message, preserving behavior while improving DRY and separation of concerns.",
+    "refactored_code_file": "snippet2_refactored.php"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactoring further reduces duplication by centralizing the shared 'new form (form_id=0) early success' and 'instantiate builder + dispatch action + wp_send_json' logic into handle_field_ajax_action. Compared to the previous refactor, the current version is slightly cleaner by reordering parameters (handle_field_ajax_action($form_id, $success_message, ...)) but does not change the core behavior. No new sanitization/capability/nonce logic was altered, and the action callbacks still receive the same arguments (builder + form_id + action-specific args)."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 3,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 75,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 75,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 13168,
+      "completion_tokens": 3470,
+      "total_tokens": 16638,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 7698,
+        "completion_tokens": 932,
+        "total_tokens": 8630
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 5470,
+        "completion_tokens": 2538,
+        "total_tokens": 8008
+      }
+    },
+    "estimated_cost_usd": 0.018228,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.002705,
+      "gpt-5.4-mini": 0.015523
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:12:04.274588+00:00",
+  "run": {
+    "snippet_id": "snippet23",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet23",
+    "snippet_index": 23,
+    "file_name": "snippet23.java",
+    "language": "java",
+    "extension": ".java",
+    "design_issues": "complex method, complex conditional"
+  },
+  "analysis": {
+    "root_cause": "The method mixes multiple responsibilities (validation, persistence lookups, filesystem directory management, old-file cleanup, filename generation, file I/O, and response mapping) and contains several nested/compound conditionals for validation and cleanup, making the control flow complex.",
+    "violated_principle": [
+      "SRP",
+      "KISS",
+      "Separation of Concerns"
+    ],
+    "explanation": "uploadProfilePhoto performs end-to-end orchestration in one place: it validates file emptiness/type/size, loads User and Profile from repositories, ensures the upload directory exists, conditionally deletes a previous photo (including parsing a stored URL/filename), generates a unique filename with extension extraction, copies the uploaded stream to disk, updates the profile entity, saves it, and maps to a response. This creates a long method with multiple conditional branches (e.g., contentType checks, size checks, profilePhotoUrl presence checks, oldFilename path parsing, existence checks for oldPhotoPath) and nested try/catch blocks. The result is a complex method with complex conditional logic that is harder to read, test, and maintain, and it violates SRP/KISS by bundling unrelated concerns (business logic vs. file-system operations vs. validation) into a single routine."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "This refactoring keeps the behavior intact while reducing the complexity of uploadProfilePhoto by moving validation, upload-directory creation, old-photo cleanup, filename extraction, and filename generation into small private methods. The main method becomes a clear orchestration flow with fewer nested conditionals, improving readability and maintainability without changing the external contract.",
+    "refactored_code_file": "snippet23_refactored.java"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "Behavior change risk: original code extracted extension from original filename and used it; current code does the same, but if originalFilename is null or lacks '.', extension handling remains the same—however overall behavior is not fully verifiable without tests.",
+      "Behavior change risk: original code used nested try/catch around deletion and continued; current code still catches exceptions in deleteOldProfilePhotoIfPresent, but the scope of exceptions differs slightly (e.g., any runtime exceptions inside deletion are still caught, but other side effects could differ).",
+      "Behavior change risk: original code created upload directory inside the main try; current code does it in getOrCreateUploadPath() which is called inside the try, but IOException handling is the same (wrapped)."
+    ],
+    "comments": "The current refactoring further reduces the original complex method by extracting validation, directory creation, old-photo deletion, filename extraction, and filename generation into separate methods. This also reduces complex conditional complexity in the main method (though the conditionals remain inside helper methods). Compared to the previous refactored attempt, the current version is essentially the same structure and does not introduce clear additional complexity; it is at least as good for the targeted design issues. Behavior is likely preserved, but not guaranteed due to subtle differences in control flow/scope and lack of explicit tests."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 2,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 75,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 11192,
+      "completion_tokens": 3103,
+      "total_tokens": 14295,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 6294,
+        "completion_tokens": 1095,
+        "total_tokens": 7389
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 4898,
+        "completion_tokens": 2008,
+        "total_tokens": 6906
+      }
+    },
+    "estimated_cost_usd": 0.015337,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.002628,
+      "gpt-5.4-mini": 0.012709
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

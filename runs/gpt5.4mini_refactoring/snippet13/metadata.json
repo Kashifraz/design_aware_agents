@@ -1,0 +1,96 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T04:07:25.970102+00:00",
+  "run": {
+    "snippet_id": "snippet13",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4-mini"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet13",
+    "snippet_index": 13,
+    "file_name": "snippet13.js",
+    "language": "javascript",
+    "extension": ".js",
+    "design_issues": "complex method, complex conditional"
+  },
+  "analysis": {
+    "root_cause": "The function `checkSpamPatterns` bundles multiple independent spam-detection heuristics (link counting, keyword matching across multiple fields, and capitalization analysis) into one large method with several early-return conditionals, creating a complex control flow.",
+    "violated_principle": [
+      "SRP",
+      "KISS",
+      "Separation of Concerns"
+    ],
+    "explanation": "`checkSpamPatterns` performs three distinct checks with different responsibilities: (1) counting URLs via regex and thresholding, (2) scanning multiple strings (content, author name, author email) against a keyword list, and (3) computing an uppercase ratio and applying a threshold. Each check introduces its own conditional logic and early returns, so the method grows in complexity as heuristics are added. This violates SRP because the function is responsible for more than one reason to classify spam, and it violates KISS/Separation of Concerns because the detection rules are tightly coupled and not modularized into smaller, focused units (e.g., separate functions or a rule-based pipeline)."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "Split the three independent spam checks into focused helper functions and keep the main function as a simple early-return pipeline. This reduces method complexity and nested conditionals while preserving the original thresholds, keyword list, and return reasons.",
+    "refactored_code_file": "snippet13_refactored.js"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "yes",
+    "new_risks": [],
+    "comments": "The refactoring extracts the complex logic into smaller helper functions (hasTooManyLinks, containsSpamKeywords, hasExcessiveCapitalization), reducing both the complex method and complex conditional concerns in checkSpamPatterns. The current snippet matches the previous refactored attempt and preserves the original behavior and thresholds/reasons. No new risks were introduced."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 3,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "yes",
+        "improvement_score": 78,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "yes",
+        "improvement_score": 70,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "yes",
+        "improvement_score": 85,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 7266,
+      "completion_tokens": 1878,
+      "total_tokens": 9144,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 4079,
+        "completion_tokens": 581,
+        "total_tokens": 4660
+      },
+      "gpt-5.4-mini": {
+        "prompt_tokens": 3187,
+        "completion_tokens": 1297,
+        "total_tokens": 4484
+      }
+    },
+    "estimated_cost_usd": 0.009769,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.001542,
+      "gpt-5.4-mini": 0.008227
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}

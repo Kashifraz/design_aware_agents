@@ -1,0 +1,99 @@
+{
+  "output_format_version": 2,
+  "finished_at": "2026-04-19T06:13:06.774923+00:00",
+  "run": {
+    "snippet_id": "snippet24",
+    "dataset_path": "design_issues.json",
+    "models": {
+      "analyze": "gpt-5.4-nano",
+      "validate": "gpt-5.4-nano",
+      "refactor": "gpt-5.4"
+    },
+    "package_version": "0.1.0"
+  },
+  "dataset_item": {
+    "id": "snippet24",
+    "snippet_index": 24,
+    "file_name": "snippet24.js",
+    "language": "javascript",
+    "extension": ".js",
+    "design_issues": "code duplication"
+  },
+  "analysis": {
+    "root_cause": "Repeated boilerplate request/response handling logic (try/catch, apiClient call, response.data.success check, and error throwing) is duplicated across multiple service methods in postService.",
+    "violated_principle": [
+      "DRY",
+      "Separation of Concerns",
+      "KISS"
+    ],
+    "explanation": "Each method (getPosts, getPost, createPost, updatePost, deletePost, publishPost, unpublishPost, previewPost) follows the same pattern: build/choose a URL, call apiClient.{get|post|put|delete|patch}, check response.data.success, return a similarly nested payload, and otherwise throw response.data.message or a default error. This repetition increases maintenance cost and inconsistency risk (e.g., different return shapes like response.data.data vs response.data.data.post, and deletePost returning void) because any change to error handling or success semantics must be replicated in every method instead of being centralized in a shared helper."
+  },
+  "refactor": {
+    "refactoring_technique": "Extract Method",
+    "reasoning": "The duplicated request/response handling logic was centralized into small helper functions: one for validating API responses and one for executing requests. This reduces repetition across service methods while preserving the original behavior, including endpoint usage, returned data shapes, and error messages.",
+    "refactored_code_file": "snippet24_refactored.js"
+  },
+  "validation": {
+    "issue_resolved": true,
+    "improvement_score": 85,
+    "preserves_behavior": "uncertain",
+    "new_risks": [
+      "deletePost: executeRequest passes dataSelector returning undefined, but handleResponse returns dataSelector(response.data.data); if API returns a different shape, behavior may differ (though original also returned nothing on success).",
+      "executeRequest/handleResponse assumes response.data.success and response.data.message exist; if some endpoints return different structure, error handling may differ from original (original also assumed same fields, but centralized code makes this coupling more explicit)."
+    ],
+    "comments": "The refactor extracts duplicated response-handling logic (success check, error throwing, data selection) into handleResponse/executeRequest and centralizes query-string building into buildPostsQuery. This reduces code duplication across all service methods. However, behavior preservation is marked uncertain because deletePost now relies on a dataSelector that returns undefined and the centralized flow may subtly differ in return values/shape expectations compared to the original per-method implementation."
+  },
+  "attempt": 3,
+  "stop_reason": "max_retries",
+  "selection": {
+    "policy": "best iteration: preserves_behavior (yes > uncertain > no), then higher improvement_score, then lower attempt number",
+    "selected_attempt": 1,
+    "last_graph_attempt": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 85,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 2,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 55,
+        "issue_resolved": true
+      },
+      {
+        "attempt": 3,
+        "preserves_behavior": "uncertain",
+        "improvement_score": 75,
+        "issue_resolved": true
+      }
+    ]
+  },
+  "token_usage": {
+    "totals": {
+      "prompt_tokens": 16966,
+      "completion_tokens": 3999,
+      "total_tokens": 20965,
+      "api_calls": 7
+    },
+    "by_model": {
+      "gpt-5.4-nano": {
+        "prompt_tokens": 10081,
+        "completion_tokens": 941,
+        "total_tokens": 11022
+      },
+      "gpt-5.4": {
+        "prompt_tokens": 6885,
+        "completion_tokens": 3058,
+        "total_tokens": 9943
+      }
+    },
+    "estimated_cost_usd": 0.066275,
+    "estimated_cost_by_model_usd": {
+      "gpt-5.4-nano": 0.003192,
+      "gpt-5.4": 0.063082
+    },
+    "pricing_source": "OPENAI_MODEL_PRICES_JSON"
+  }
+}
