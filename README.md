@@ -39,21 +39,19 @@ pip install -r requirements.txt
 
 ```text
 design_aware_agents/
-├── README.md                 # This file
 ├── requirements.txt          # Python dependencies
 ├── .env.example              # Example environment variables (copy to .env)
 ├── design_issues.json        # Default dataset: items with id, snippet_index, code, design_issues, …
-├── code_snippets/            # Optional per-file copies of snippets (mirrors filenames in dataset)
-├── prompts/                  # Agent prompt templates (placeholders filled at runtime)
+├── code_snippets/            # Code snippets with design issues
+├── prompts/                  # Agent prompt templates
 │   ├── analyzer_agent_prompt.md
 │   ├── refactoring_agent_prompt.md
 │   └── validation_agent_prompt.md
-├── docs/                     # Optional paper artifacts (e.g. LaTeX tables)
 ├── runs/                     # Default output root; often contains per-experiment subfolders
 │   └── <batch_name>/         # e.g. gpt5.4_refactoring / gpt5.4mini_refactoring
 │       └── <snippet_id>/
-│           ├── metadata.json # Analysis, refactor summary, validation, token_usage, selection, …
-│           └── *_refactored.*# Saved refactored source for the best iteration
+│           ├── metadata.json 
+│           └── *_refactored.*
 └── src/design_aware_agents/  # Installable package
     ├── __main__.py           # python -m design_aware_agents
     ├── cli.py                # Argument parsing, batch runs, runs_dir / runs_subdir resolution
