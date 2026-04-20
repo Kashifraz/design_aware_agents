@@ -1,6 +1,6 @@
 # Design-aware agents
 
-A small **LangGraph** pipeline that uses three OpenAI **Chat Completions** agents—**analyze**, **refactor**, and **validate**—to study automated refactoring aimed at stated **design issues** while encouraging **behavior preservation**. Each dataset item is a code snippet plus a short design-issue label; the graph can **retry** the refactor/validate loop up to a configured maximum when validation does not meet a strict success bar.
+A small **LangGraph** pipeline that uses three agents—**analyze**, **refactor**, and **validate**—to study automated refactoring aimed at stated **design issues** while encouraging **behavior preservation**. Each dataset item is a code snippet plus a short design-issue label; the graph can **retry** the refactor/validate loop up to a configured maximum when validation does not meet a strict success bar.
 
 ## What it does
 
@@ -13,7 +13,7 @@ Persisted outputs use the **best iteration** (by preservation, then score, then 
 ## Requirements
 
 - Python 3.10+ (tested in project with 3.13)
-- Dependencies: see [`requirements.txt`](requirements.txt) (`langgraph`, `openai`, `pydantic`, `json-repair`, `python-dotenv`, `openpyxl` for optional spreadsheet tooling)
+- Dependencies: see [`requirements.txt`](requirements.txt)
 
 ## Setup
 
@@ -25,15 +25,6 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Copy [`.env.example`](.env.example) to `.env` and set at least **`OPENAI_API_KEY`**. Model names and paths default via environment variables (see `.env.example`).
-
-Run the package from the repo root with `PYTHONPATH` pointing at `src`, or install the package in editable mode if you add a `pyproject.toml` / `setup.cfg`.
-
-```bash
-set PYTHONPATH=src
-python -m design_aware_agents --help
-```
-
 ## CLI usage
 
 | Mode | Command |
@@ -43,23 +34,6 @@ python -m design_aware_agents --help
 | All snippets | `python -m design_aware_agents --all` |
 | Verbose logging | add `--verbose` |
 
-Important options:
-
-- **`--dataset`** — Path to the JSON dataset (default: `design_issues.json` or `DESIGN_AWARE_DATASET`).
-- **`--runs-dir`** — Base output directory (default: `runs` or `DESIGN_AWARE_RUNS_DIR`).
-- **`--runs-subdir NAME`** — Optional subfolder under `runs-dir` so separate experiments do not overwrite each other (or set `DESIGN_AWARE_RUNS_SUBDIR`).
-- **`--model-analyze` / `--model-validate` / `--model-refactor`** — Override OpenAI model ids (defaults from `OPENAI_MODEL_*` in `.env`).
-
-## Configuration (environment)
-
-See [`.env.example`](.env.example) for:
-
-- **`OPENAI_MODEL_ANALYZE`**, **`OPENAI_MODEL_VALIDATE`**, **`OPENAI_MODEL_REFACTOR`** — Per-stage models.
-- **`OPENAI_MAX_TOKENS_JSON`**, **`OPENAI_MAX_TOKENS_REFACTOR`**, **`OPENAI_TEMPERATURE`** — Generation limits for JSON vs text completions.
-- **`OPENAI_MODEL_PRICES_JSON`** — Optional JSON map of model id → USD per 1M prompt/completion tokens for **`estimated_cost_*`** in `metadata.json`.
-- **`DESIGN_AWARE_*`** — Dataset path, prompts dir, runs dir, batch subdir, refactor retries, LangGraph recursion limit.
-
-GPT‑5.4 family models use `reasoning_effort` + temperature in the OpenAI client as implemented in [`src/design_aware_agents/llm.py`](src/design_aware_agents/llm.py).
 
 ## Repository layout
 
@@ -99,7 +73,3 @@ For each snippet under **`runs/<optional_subdir>/<snippet_id>/`**:
 
 - **`metadata.json`** — Final analysis/refactor/validation (best iteration), `iteration_log`, `selection`, `stop_reason`, optional **`token_usage`** (totals, per-model tokens, optional **estimated cost** if prices are configured).
 - **`<stem>_refactored<ext>`** — Refactored code file for the chosen best iteration.
-
-## License / version
-
-Package version is defined in [`src/design_aware_agents/__init__.py`](src/design_aware_agents/__init__.py) (`__version__`).
